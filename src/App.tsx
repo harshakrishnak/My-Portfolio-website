@@ -512,13 +512,13 @@ export default function App() {
 
             {/* Pitch summary */}
             <p className="text-base sm:text-lg text-text-theme-secondary max-w-2xl font-sans leading-relaxed">
-              I specialize in building scalable, real-time AI monitoring platforms and high-throughput distributed systems. Over **11+ years**, I've co-founded product companies and designed complex full-stack architectures integrating VMS (Video Management Systems), HIPAA-compliant clouds, and event pipelines.
+              I specialize in building scalable, real-time AI monitoring platforms and high-throughput distributed systems. Over **12+ years**, I've co-founded product companies and designed complex full-stack architectures integrating VMS (Video Management Systems), HIPAA-compliant clouds, and event pipelines.
             </p>
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-4 max-w-2xl">
               <div className="glass-panel p-3 rounded-xl border-l-4 border-l-accent-theme-primary">
-                <span className="text-2xl sm:text-3xl font-display font-bold text-text-theme-primary block">11+ Yrs</span>
+                <span className="text-2xl sm:text-3xl font-display font-bold text-text-theme-primary block">12+ Yrs</span>
                 <span className="text-xs text-text-theme-secondary font-mono tracking-wider uppercase">Experience</span>
               </div>
               <div className="glass-panel p-3 rounded-xl border-l-4 border-l-accent-theme-secondary">
