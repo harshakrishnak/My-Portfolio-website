@@ -57,6 +57,22 @@ export default function App() {
   const [processedFrames, setProcessedFrames] = useState(482019);
   const [anomalyCounter, setAnomalyCounter] = useState(14);
 
+  // Enterprise Analytics Dashboard States
+  const [selectedRegion, setSelectedRegion] = useState<'ALL' | 'IN' | 'US' | 'EU' | 'APAC'>('ALL');
+  const [activeMetric, setActiveMetric] = useState<'health' | 'load' | 'loss'>('health');
+  const [chartData, setChartData] = useState<number[]>([98, 97, 98, 96, 95, 97, 98, 99, 97, 98, 95, 96, 98, 99]);
+  const [activeAlarms, setActiveAlarms] = useState<Array<{ id: string, time: string, site: string, cam: string, type: string, priority: 'CRITICAL' | 'MAJOR' | 'MINOR', status: string }>>([
+    { id: '1', time: '20:41:05', site: 'Site-402 (Goa)', cam: 'CAM-8942', type: 'Blur Exception', priority: 'MAJOR', status: 'Active' },
+    { id: '2', time: '20:40:52', site: 'Site-109 (Kasaragod)', cam: 'CAM-1204', type: 'Obstruction', priority: 'CRITICAL', status: 'Active' },
+    { id: '3', time: '20:39:15', site: 'Site-512 (Panaji)', cam: 'CAM-4029', type: 'Scene Change', priority: 'MINOR', status: 'Resolved' },
+    { id: '4', time: '20:38:40', site: 'Site-022 (AWS-Edge)', cam: 'CAM-0592', type: 'Low Light Trigger', priority: 'MINOR', status: 'Active' },
+    { id: '5', time: '20:37:12', site: 'Site-331 (US-East)', cam: 'CAM-7721', type: 'Signal Loss', priority: 'CRITICAL', status: 'Active' }
+  ]);
+  const [outageSimulation, setOutageSimulation] = useState<boolean>(false);
+  const [selectedClusterId, setSelectedClusterId] = useState<string>('IN-S1');
+  const [activeAIModel, setActiveAIModel] = useState<string>('YOLOv8 Edge');
+  const [modelLog, setModelLog] = useState<string>('SYSTEM RUNTIME: NORMAL - METADATA STREAM ACTIVE');
+
   // Skill matrix active filter
   const [skillCategory, setSkillCategory] = useState<'all' | 'languages' | 'backend' | 'frontend' | 'infrastructure'>('all');
 
@@ -89,17 +105,95 @@ export default function App() {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      // Increment frames
-      setProcessedFrames(prev => prev + Math.floor(Math.random() * 15) + 10);
+      // Increment processed frames at scale (10,000+ cameras processing ~250k frames per second)
+      setProcessedFrames(prev => prev + Math.floor(Math.random() * 450) + 200);
+
+      // Randomly update health/load/loss telemetry graph values
+      setChartData(prev => {
+        const next = [...prev.slice(1)];
+        const lastVal = prev[prev.length - 1];
+        
+        let minVal = 95;
+        let maxVal = 100;
+        let step = 0.8;
+        
+        if (activeMetric === 'load') {
+          minVal = 40;
+          maxVal = 85;
+          step = 3;
+        } else if (activeMetric === 'loss') {
+          minVal = 0.05;
+          maxVal = 1.2;
+          step = 0.15;
+        }
+        
+        if (outageSimulation) {
+          if (activeMetric === 'health') {
+            minVal = 62;
+            maxVal = 78;
+          } else if (activeMetric === 'load') {
+            minVal = 88;
+            maxVal = 99;
+          } else {
+            minVal = 4.5;
+            maxVal = 9.8;
+          }
+        }
+
+        const change = (Math.random() * step * 2) - step;
+        let newVal = lastVal + change;
+        newVal = Math.max(minVal, Math.min(maxVal, newVal));
+        
+        next.push(Number(newVal.toFixed(activeMetric === 'loss' ? 2 : 1)));
+        return next;
+      });
 
       // Occasional anomalies
-      if (Math.random() > 0.85) {
+      const anomalyChance = outageSimulation ? 0.4 : 0.85;
+      if (Math.random() > anomalyChance) {
         setAnomalyCounter(prev => prev + 1);
+
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+
+        const regionSites = {
+          'ALL': ['Site-402 (Goa)', 'Site-109 (Kasaragod)', 'Site-512 (Panaji)', 'Site-331 (US-East)', 'Site-022 (AWS-Edge)'],
+          'IN': ['Site-402 (Goa)', 'Site-109 (Kasaragod)', 'Site-512 (Panaji)'],
+          'US': ['Site-331 (US-East)', 'Site-124 (US-West)'],
+          'EU': ['Site-088 (EU-Central)', 'Site-092 (EU-West)'],
+          'APAC': ['Site-210 (APAC-Singapore)', 'Site-212 (APAC-Tokyo)']
+        };
+
+        const activeList = regionSites[selectedRegion];
+        const site = activeList[Math.floor(Math.random() * activeList.length)];
+        const camId = `CAM-${Math.floor(1000 + Math.random() * 8999)}`;
+
+        const alarmTypes = [
+          { type: 'Blur Exception', priority: 'MAJOR' as const },
+          { type: 'Obstruction Alert', priority: 'CRITICAL' as const },
+          { type: 'Scene Change', priority: 'MINOR' as const },
+          { type: 'Low Light Trigger', priority: 'MINOR' as const },
+          { type: 'Signal Loss', priority: 'CRITICAL' as const }
+        ];
+        const selectedAlarm = alarmTypes[Math.floor(Math.random() * alarmTypes.length)];
+
+        setActiveAlarms(prev => [
+          {
+            id: String(Date.now()),
+            time: timeStr,
+            site,
+            cam: camId,
+            type: selectedAlarm.type,
+            priority: selectedAlarm.priority,
+            status: 'Active'
+          },
+          ...prev.slice(0, 4)
+        ]);
       }
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [isPlaying, aiAnalysisActive]);
+  }, [isPlaying, activeMetric, selectedRegion, outageSimulation]);
 
   // Handle mock form submit
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -611,221 +705,542 @@ export default function App() {
         {/* Section B: VMS Camera Intelligence Monitor */}
         <section id="dashboard" className="scroll-mt-20">
           <div className="text-center space-y-3 mb-10">
-            <h2 className="font-display text-3xl font-bold tracking-tight text-text-theme-primary">VMS Camera Intelligence Monitor</h2>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-text-theme-primary">Enterprise VMS Observability Terminal</h2>
             <p className="text-text-theme-secondary max-w-2xl mx-auto text-sm sm:text-base">
-              A real-time simulation of the AI camera analytics platform I architect at Conexao — integrated with Milestone XProtect VMS, processing 1000+ live feeds concurrently.
+              Explore aggregated telemetry and real-time AI analytics performance from 10,000+ cameras spanning 500+ remote server sites worldwide.
             </p>
           </div>
 
-          {/* Top Bar: System Status */}
-          <div className="glass-panel rounded-xl px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs font-mono border border-border-theme">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                <span className="text-green-400 font-bold">VMS ONLINE</span>
-              </div>
-              <span className="text-text-theme-muted hidden sm:inline">Milestone XProtect Smart Client v23.3</span>
-            </div>
-            <div className="flex items-center space-x-4 text-text-theme-muted">
-              <span>Cameras: <strong className="text-text-theme-primary">1000 / 1000</strong></span>
-              <span>Frames: <strong className="text-accent-theme-primary">{processedFrames.toLocaleString()}</strong></span>
-              <span>Alerts: <strong className="text-red-400">{anomalyCounter}</strong></span>
+          {/* Region Tabs */}
+          <div className="flex flex-wrap gap-2 mb-6 justify-center">
+            {(['ALL', 'IN', 'US', 'EU', 'APAC'] as const).map(reg => (
               <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="flex items-center space-x-1 px-2 py-1 rounded border border-border-theme hover:border-border-theme-hover transition-all cursor-pointer"
+                key={reg}
+                onClick={() => setSelectedRegion(reg)}
+                className={`px-4 py-2 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                  selectedRegion === reg
+                    ? 'border-accent-theme-primary bg-accent-theme-primary/10 text-accent-theme-primary'
+                    : 'border-border-theme hover:bg-bg-secondary/40 text-text-theme-secondary'
+                }`}
               >
-                {isPlaying ? <Pause className="w-3 h-3 text-yellow-400" /> : <Play className="w-3 h-3 text-green-400" />}
-                <span className="text-[10px] font-bold">{isPlaying ? 'PAUSE' : 'RESUME'}</span>
+                {reg === 'ALL' ? '🌎 ALL SITES' : reg === 'IN' ? '🇮🇳 INDIA' : reg === 'US' ? '🇺🇸 UNITED STATES' : reg === 'EU' ? '🇪🇺 EUROPE' : '🌏 APAC'}
               </button>
-            </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Stat Cards */}
+          {(() => {
+            const regionData = {
+              ALL: { cameras: 10482, servers: 520, bandwidth: 256.4, health: outageSimulation ? '74.8%' : '98.6%' },
+              IN: { cameras: 3420, servers: 170, bandwidth: 82.5, health: outageSimulation ? '78.2%' : '99.1%' },
+              US: { cameras: 2850, servers: 140, bandwidth: 71.2, health: outageSimulation ? '71.5%' : '98.2%' },
+              EU: { cameras: 2200, servers: 110, bandwidth: 54.8, health: outageSimulation ? '76.4%' : '98.5%' },
+              APAC: { cameras: 2012, servers: 100, bandwidth: 47.9, health: outageSimulation ? '73.1%' : '99.3%' }
+            }[selectedRegion];
 
-            {/* Camera Grid: 3 cols on left */}
-            <div className="lg:col-span-3 space-y-4">
+            const currentBw = (regionData.bandwidth + (processedFrames % 15) / 5 - (outageSimulation ? regionData.bandwidth * 0.15 : 0)).toFixed(1);
 
-              {/* 3x2 Camera Feed Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                {[
-                  { id: 'CAM-01', loc: 'Kasaragod HQ — Lobby', status: 'online', blur: 1.2, obstruction: 0, fps: 25, alert: false },
-                  { id: 'CAM-02', loc: 'Panaji — Server Room', status: 'online', blur: 0.8, obstruction: 0, fps: 25, alert: false },
-                  { id: 'CAM-03', loc: 'Goa — Parking Zone', status: 'alert', blur: 6.4, obstruction: 12, fps: 24, alert: true },
-                  { id: 'CAM-04', loc: 'Remote — Gateway Node', status: 'online', blur: 1.1, obstruction: 0, fps: 25, alert: false },
-                  { id: 'CAM-05', loc: 'AWS — HealthFeed Edge', status: 'degraded', blur: 3.3, obstruction: 5, fps: 18, alert: false },
-                  { id: 'CAM-06', loc: 'Kasaragod — Perimeter', status: 'online', blur: 0.9, obstruction: 0, fps: 25, alert: false },
-                ].map((cam) => (
-                  <div
-                    key={cam.id}
-                    onClick={() => setSelectedCamera(cam.id)}
-                    className={`relative aspect-video rounded-xl overflow-hidden border cursor-pointer transition-all group ${
-                      selectedCamera.startsWith(cam.id)
-                        ? 'border-accent-theme-primary shadow-lg scale-[1.02]'
-                        : cam.status === 'alert'
-                        ? 'border-red-500/60 hover:border-red-500'
-                        : cam.status === 'degraded'
-                        ? 'border-yellow-500/40 hover:border-yellow-400'
-                        : 'border-border-theme hover:border-border-theme-hover'
-                    }`}
-                    style={{ background: 'var(--bg-primary)' }}
-                  >
-                    {/* Scanline CRT overlay */}
-                    <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.08)_2px,rgba(0,0,0,0.08)_4px)] pointer-events-none z-10" />
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-accent-theme-primary">
+                  <span className="text-text-theme-muted font-mono text-[10px] tracking-wider uppercase block">Total Cameras</span>
+                  <span className="text-xl sm:text-2xl font-display font-bold text-text-theme-primary block">{regionData.cameras.toLocaleString()}</span>
+                  <span className="text-[9px] font-mono text-green-400">● 100% Ingestion Rate</span>
+                </div>
+                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-accent-theme-secondary">
+                  <span className="text-text-theme-muted font-mono text-[10px] tracking-wider uppercase block">Active Sites / Servers</span>
+                  <span className="text-xl sm:text-2xl font-display font-bold text-text-theme-primary block">{regionData.servers} Sites</span>
+                  <span className="text-[9px] font-mono text-text-theme-muted">Distributed Nodes</span>
+                </div>
+                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-green-500" style={{ borderLeftColor: outageSimulation ? '#ef4444' : '#22c55e' }}>
+                  <span className="text-text-theme-muted font-mono text-[10px] tracking-wider uppercase block">Recording Server Health</span>
+                  <span className={`text-xl sm:text-2xl font-display font-bold block ${outageSimulation ? 'text-red-400' : 'text-green-400'}`}>{regionData.health}</span>
+                  <span className="text-[9px] font-mono text-text-theme-muted">{outageSimulation ? '⚠ OUTAGE IN REGION' : '✓ Clusters Healthy'}</span>
+                </div>
+                <div className="glass-panel p-4 rounded-xl border-l-4 border-l-yellow-500">
+                  <span className="text-text-theme-muted font-mono text-[10px] tracking-wider uppercase block">Aggregated Bandwidth</span>
+                  <span className="text-xl sm:text-2xl font-display font-bold text-text-theme-primary block">{currentBw} Gbps</span>
+                  <span className="text-[9px] font-mono text-text-theme-muted">VMS Stream Load</span>
+                </div>
+              </div>
+            );
+          })()}
 
-                    {/* AI Bounding box */}
-                    {cam.status !== 'degraded' && (
-                      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-20 ${cam.alert ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                        <div className={`relative w-14 h-10 border-2 rounded-sm ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'} animate-pulse`}>
-                          <div className={`absolute -top-0.5 -left-0.5 w-2 h-2 border-t-2 border-l-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
-                          <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 border-t-2 border-r-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
-                          <div className={`absolute -bottom-0.5 -left-0.5 w-2 h-2 border-b-2 border-l-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
-                          <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 border-b-2 border-r-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
-                          <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-[7px] font-mono px-1 rounded whitespace-nowrap ${cam.alert ? 'bg-red-500/80 text-white' : 'bg-accent-theme-primary/80 text-bg-primary'}`}>
-                            {cam.alert ? 'ANOMALY' : 'TRACKING'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+          {/* Widgets Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                    {/* Top-left: Camera ID + status dot */}
-                    <div className="absolute top-1.5 left-1.5 z-30 flex items-center space-x-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${cam.status === 'online' ? 'bg-green-500' : cam.status === 'alert' ? 'bg-red-500 animate-ping' : 'bg-yellow-500'}`} />
-                      <span className="text-[9px] font-mono font-bold text-white bg-black/50 px-1 rounded">{cam.id}</span>
-                    </div>
+            {/* Widget 1: Health Chart (Aggregated Stream Telemetry) */}
+            <div className="md:col-span-2 lg:col-span-2 glass-panel p-5 rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border-theme mb-4 gap-3">
+                <div className="flex items-center space-x-2">
+                  <Activity className="w-5 h-5 text-accent-theme-secondary" />
+                  <h3 className="font-display font-semibold text-text-theme-primary">Aggregated Stream Telemetry</h3>
+                </div>
 
-                    {/* Top-right: REC */}
-                    <div className="absolute top-1.5 right-1.5 z-30">
-                      {cam.status !== 'degraded' && (
-                        <span className="text-[8px] font-mono text-red-400 bg-black/50 px-1 rounded flex items-center space-x-0.5">
-                          <span className="w-1 h-1 rounded-full bg-red-500 animate-ping inline-block" />
-                          <span>REC</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Center grid pattern */}
-                    <div className="absolute inset-0 flex items-center justify-center z-0">
-                      <svg viewBox="0 0 60 40" className={`w-3/4 opacity-10 ${cam.alert ? 'text-red-500' : 'text-accent-theme-primary'}`}>
-                        <rect x="5" y="5" width="50" height="30" stroke="currentColor" strokeWidth="0.5" fill="none" />
-                        <line x1="5" y1="20" x2="55" y2="20" stroke="currentColor" strokeWidth="0.3" />
-                        <line x1="30" y1="5" x2="30" y2="35" stroke="currentColor" strokeWidth="0.3" />
-                        <circle cx="30" cy="20" r="8" stroke="currentColor" strokeWidth="0.5" fill="none" />
-                      </svg>
-                    </div>
-
-                    {/* Bottom: Location + FPS + blur */}
-                    <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/70 to-transparent p-1.5">
-                      <p className="text-[8px] text-white/80 font-mono leading-tight truncate">{cam.loc}</p>
-                      <div className="flex justify-between mt-0.5">
-                        <span className="text-[7px] font-mono text-white/60">FPS: {cam.fps}</span>
-                        <span className={`text-[7px] font-mono font-bold ${cam.blur > 4 ? 'text-red-400' : cam.blur > 2 ? 'text-yellow-400' : 'text-green-400'}`}>
-                          BLUR: {cam.blur}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Alert pulse border */}
-                    {cam.alert && (
-                      <div className="absolute inset-0 border-2 border-red-500 rounded-xl animate-pulse pointer-events-none z-40 opacity-60" />
-                    )}
-                  </div>
-                ))}
+                {/* Chart Metric Toggle Buttons */}
+                <div className="flex bg-bg-primary border border-border-theme rounded-lg p-0.5 self-start">
+                  {(['health', 'load', 'loss'] as const).map(met => (
+                    <button
+                      key={met}
+                      onClick={() => setActiveMetric(met)}
+                      className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold cursor-pointer transition-colors ${
+                        activeMetric === met
+                          ? 'bg-accent-theme-primary text-bg-primary font-extrabold'
+                          : 'text-text-theme-secondary hover:text-text-theme-primary'
+                      }`}
+                    >
+                      {met === 'health' ? 'HEALTH' : met === 'load' ? 'LOAD' : 'LOSS %'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Alert Ticker Strip */}
-              <div className="glass-panel rounded-xl px-4 py-2.5 border border-border-theme overflow-hidden">
-                <div className="flex items-center space-x-3">
-                  <span className="text-[10px] font-mono font-bold text-red-400 shrink-0 flex items-center space-x-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-                    <span>LIVE ALERTS</span>
+              {/* SVG Area Chart */}
+              <div className="relative">
+                <div className="flex justify-between text-[10px] font-mono text-text-theme-muted mb-2">
+                  <span>Cluster Metric: <strong className="text-text-theme-primary uppercase">{activeMetric}</strong></span>
+                  <span className="text-accent-theme-primary font-bold">
+                    {activeMetric === 'health' 
+                      ? `${chartData[chartData.length - 1]}% Avg Health` 
+                      : activeMetric === 'load' 
+                      ? `${chartData[chartData.length - 1]}% Server Load` 
+                      : `${chartData[chartData.length - 1]}% Packet Loss`}
                   </span>
-                  <div className="overflow-hidden flex-grow relative h-4">
-                    <div className="flex gap-8 text-[10px] font-mono absolute whitespace-nowrap animate-ticker" style={{ animation: 'ticker 25s linear infinite' }}>
-                      {[
-                        '⚠ CAM-03: Blur threshold exceeded (6.4) — Goa Parking Zone',
-                        '✓ CAM-01: NLP metadata parse complete — 482,031 frames OK',
-                        '⚠ CAM-05: Frame rate degraded to 18 FPS — AWS Edge Node',
-                        '✓ AI-MODULE: Anomaly scored and logged to MongoDB cluster',
-                        '✓ VMS-PLUGIN: Milestone XProtect Smart Client overlay sync OK',
-                        '⚠ CAM-03: Partial obstruction detected (12%) — review required',
-                        '✓ HIPAA-PIPELINE: HealthFeed redundancy check passed on AWS S3',
-                      ].map((msg, i) => (
-                        <span key={i} className={msg.startsWith('⚠') ? 'text-yellow-400 animate-pulse' : 'text-green-400'}>
-                          {msg}
-                        </span>
-                      ))}
-                      {/* Duplicate for infinite seamless scroll */}
-                      {[
-                        '⚠ CAM-03: Blur threshold exceeded (6.4) — Goa Parking Zone',
-                        '✓ CAM-01: NLP metadata parse complete — 482,031 frames OK',
-                        '⚠ CAM-05: Frame rate degraded to 18 FPS — AWS Edge Node',
-                        '✓ AI-MODULE: Anomaly scored and logged to MongoDB cluster',
-                        '✓ VMS-PLUGIN: Milestone XProtect Smart Client overlay sync OK',
-                        '⚠ CAM-03: Partial obstruction detected (12%) — review required',
-                        '✓ HIPAA-PIPELINE: HealthFeed redundancy check passed on AWS S3',
-                      ].map((msg, i) => (
-                        <span key={`dup-${i}`} className={msg.startsWith('⚠') ? 'text-yellow-400 animate-pulse' : 'text-green-400'}>
-                          {msg}
-                        </span>
-                      ))}
-                    </div>
+                </div>
+
+                <div className="bg-bg-primary/40 border border-border-theme/80 rounded-xl p-3 h-52 relative overflow-hidden flex items-end">
+                  {/* Graph grid lines */}
+                  <div className="absolute inset-0 grid grid-rows-3 grid-cols-10 pointer-events-none opacity-20 border-b border-border-theme">
+                    {[...Array(30)].map((_, i) => (
+                      <div key={i} className="border-t border-l border-border-theme/40" />
+                    ))}
                   </div>
+
+                  <svg className="w-full h-full absolute inset-0 pt-2" viewBox="0 0 400 100" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="widgetChartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Convert chart data to SVG points */}
+                    {(() => {
+                      let maxVal = 100;
+                      let minVal = 0;
+                      if (activeMetric === 'health') { minVal = 60; maxVal = 100; }
+                      else if (activeMetric === 'load') { minVal = 0; maxVal = 100; }
+                      else { minVal = 0; maxVal = 10; }
+
+                      const points = chartData.map((val, idx) => {
+                        const x = (idx * 400) / (chartData.length - 1);
+                        const pct = (val - minVal) / (maxVal - minVal);
+                        const y = 100 - (pct * 90); // keep margin top/bottom
+                        return { x, y };
+                      });
+
+                      const dPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                      const fillPath = `M 0 100 L ${points.map(p => `${p.x} ${p.y}`).join(' L ')} L 400 100 Z`;
+
+                      return (
+                        <>
+                          <path d={fillPath} fill="url(#widgetChartGrad)" />
+                          <path d={dPath} fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" />
+                          {/* Glow point */}
+                          <circle cx="400" cy={points[points.length - 1].y} r="4" fill="var(--accent-primary)" className="animate-ping" />
+                          <circle cx="400" cy={points[points.length - 1].y} r="3" fill="var(--accent-secondary)" />
+                        </>
+                      );
+                    })()}
+                  </svg>
+                </div>
+              </div>
+
+              {/* Live Diagnostic Sub-Metrics Row to fill space & add realism */}
+              <div className="grid grid-cols-3 gap-3 mt-4 border-t border-border-theme/40 pt-4 text-center font-mono text-[10px]">
+                <div className="p-2 rounded-lg bg-bg-secondary/40 border border-border-theme/35">
+                  <span className="text-text-theme-muted block uppercase text-[8px] tracking-wider mb-0.5">Jitter Latency</span>
+                  <span className="text-text-theme-primary font-bold">{(1.1 + (processedFrames % 7) / 10).toFixed(2)} ms</span>
+                </div>
+                <div className="p-2 rounded-lg bg-bg-secondary/40 border border-border-theme/35">
+                  <span className="text-text-theme-muted block uppercase text-[8px] tracking-wider mb-0.5">Packet Overhead</span>
+                  <span className="text-text-theme-primary font-bold">{(2.4 + (processedFrames % 5) / 8).toFixed(2)} %</span>
+                </div>
+                <div className="p-2 rounded-lg bg-bg-secondary/40 border border-border-theme/35">
+                  <span className="text-text-theme-muted block uppercase text-[8px] tracking-wider mb-0.5">Frame Ingest Jitter</span>
+                  <span className="text-text-theme-primary font-bold">{(8.2 + (processedFrames % 9) / 8).toFixed(1)} ms</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Sidebar: Camera Health Scores */}
-            <div className="glass-panel p-4 rounded-xl flex flex-col gap-4 border border-border-theme">
-              <div className="flex items-center space-x-2 pb-2 border-b border-border-theme">
-                <Activity className="w-4 h-4 text-accent-theme-primary" />
-                <h3 className="font-display font-semibold text-text-theme-primary text-sm">Camera Health</h3>
+            {/* Widget 2: AI Analytics Breakdown */}
+            <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-border-theme mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Video className="w-5 h-5 text-accent-theme-primary" />
+                    <h3 className="font-display font-semibold text-text-theme-primary">AI Analytics Breakdown</h3>
+                  </div>
+                  <span className="font-mono text-[10px] text-text-theme-muted uppercase">Active Filters</span>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    { label: 'Blur / Out of Focus', count: outageSimulation ? 485 : 182, total: 10482, color: 'bg-accent-theme-primary' },
+                    { label: 'Camera Obstruction / Tampering', count: outageSimulation ? 198 : 44, total: 10482, color: 'bg-accent-theme-secondary' },
+                    { label: 'Scene Change / Pan Detection', count: 38, total: 10482, color: 'bg-yellow-500' },
+                    { label: 'Low Light / IR Active', count: 2410, total: 10482, color: 'bg-green-500' },
+                    { label: 'Signal Loss / Offline State', count: outageSimulation ? 120 : 12, total: 10482, color: 'bg-red-500' }
+                  ].map((item, idx) => {
+                    const pct = ((item.count / item.total) * 100).toFixed(1);
+                    return (
+                      <div key={idx} className="space-y-1 p-2 rounded-lg bg-bg-secondary/40 border border-border-theme/40 font-mono text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-text-theme-secondary font-medium">{item.label}</span>
+                          <span className="text-text-theme-primary font-bold">{item.count.toLocaleString()} <span className="text-[9px] text-text-theme-muted">({pct}%)</span></span>
+                        </div>
+                        <div className="w-full bg-bg-primary h-1.5 rounded-full overflow-hidden border border-border-theme/30">
+                          <div className={`h-full rounded-full ${item.color}`} style={{ width: `${Math.max(1.5, Number(pct) * 2)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Widget 3: Recording Server Clusters (Status Grid) */}
+            <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+              <div>
+                <div className="flex items-center space-x-2 pb-3 border-b border-border-theme mb-3">
+                  <Server className="w-5 h-5 text-accent-theme-secondary" />
+                  <h3 className="font-display font-semibold text-text-theme-primary text-sm">Recording Clusters</h3>
+                </div>
+                <p className="text-[11px] text-text-theme-muted font-mono mb-3">
+                  Click a node cluster below to view real-time logs:
+                </p>
+
+                {/* 24 LED Grid */}
+                <div className="grid grid-cols-6 gap-2 mb-4">
+                  {[
+                    { id: 'IN-S1', label: 'India South 1 (Kasaragod HQ)', reg: 'IN', state: outageSimulation ? 'degraded' : 'healthy' },
+                    { id: 'IN-S2', label: 'India South 2 (Kasaragod Perimeter)', reg: 'IN', state: 'healthy' },
+                    { id: 'IN-W1', label: 'India West 1 (Goa Site)', reg: 'IN', state: 'healthy' },
+                    { id: 'IN-W2', label: 'India West 2 (Panaji Site)', reg: 'IN', state: outageSimulation ? 'critical' : 'healthy' },
+                    { id: 'IN-N1', label: 'India North Cluster (Delhi Hub)', reg: 'IN', state: 'healthy' },
+                    { id: 'IN-E1', label: 'India East Node (Kolkata Hub)', reg: 'IN', state: 'healthy' },
+                    { id: 'US-E1', label: 'US East Server Hub (Virginia)', reg: 'US', state: 'healthy' },
+                    { id: 'US-E2', label: 'US East Edge (Boston Hub)', reg: 'US', state: 'healthy' },
+                    { id: 'US-W1', label: 'US West Cloud Node (Oregon)', reg: 'US', state: outageSimulation ? 'critical' : 'healthy' },
+                    { id: 'US-W2', label: 'US West Edge (California Hub)', reg: 'US', state: 'healthy' },
+                    { id: 'US-M1', label: 'US Mid Node (Texas Hub)', reg: 'US', state: 'healthy' },
+                    { id: 'US-S1', label: 'US South Node (Miami)', reg: 'US', state: 'healthy' },
+                    { id: 'EU-C1', label: 'EU Central Node (Frankfurt)', reg: 'EU', state: 'healthy' },
+                    { id: 'EU-C2', label: 'EU Central Backup (Frankfurt)', reg: 'EU', state: 'healthy' },
+                    { id: 'EU-W1', label: 'EU West Cloud Ingest (Ireland)', reg: 'EU', state: 'healthy' },
+                    { id: 'EU-W2', label: 'EU West Local Node (London)', reg: 'EU', state: outageSimulation ? 'degraded' : 'healthy' },
+                    { id: 'EU-S1', label: 'EU South Node (Milan)', reg: 'EU', state: 'healthy' },
+                    { id: 'AP-S1', label: 'APAC South Hub (Singapore)', reg: 'APAC', state: 'healthy' },
+                    { id: 'AP-S2', label: 'APAC South Edge (Singapore)', reg: 'APAC', state: 'healthy' },
+                    { id: 'AP-N1', label: 'APAC North Hub (Tokyo)', reg: 'APAC', state: 'healthy' },
+                    { id: 'AP-N2', label: 'APAC North Edge (Seoul)', reg: 'APAC', state: 'healthy' },
+                    { id: 'AP-E1', label: 'APAC East Node (Sydney)', reg: 'APAC', state: 'healthy' },
+                    { id: 'AP-E2', label: 'APAC East Edge (Sydney)', reg: 'APAC', state: 'healthy' },
+                    { id: 'AP-W1', label: 'APAC West Hub (Hong Kong)', reg: 'APAC', state: 'healthy' }
+                  ].map(node => (
+                    <button
+                      key={node.id}
+                      title={node.label}
+                      onClick={() => setSelectedClusterId(node.id)}
+                      className={`aspect-square rounded border cursor-pointer flex items-center justify-center font-mono text-[9px] transition-all relative ${
+                        selectedClusterId === node.id
+                          ? 'border-accent-theme-primary ring-2 ring-accent-theme-primary/30 scale-105 z-10'
+                          : 'border-border-theme'
+                      } ${
+                        selectedRegion !== 'ALL' && node.reg !== selectedRegion ? 'opacity-35' : ''
+                      }`}
+                      style={{
+                        background: node.state === 'healthy' 
+                          ? 'rgba(34, 197, 94, 0.08)' 
+                          : node.state === 'degraded' 
+                          ? 'rgba(234, 179, 8, 0.12)' 
+                          : 'rgba(239, 68, 68, 0.15)'
+                      }}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${
+                        node.state === 'healthy' 
+                          ? 'bg-green-500' 
+                          : node.state === 'degraded' 
+                          ? 'bg-yellow-500 animate-pulse' 
+                          : 'bg-red-500 animate-ping'
+                      }`} />
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-3 font-mono text-xs flex-grow">
-                {[
-                  { id: 'CAM-01', health: 98 },
-                  { id: 'CAM-02', health: 99 },
-                  { id: 'CAM-03', health: 43 },
-                  { id: 'CAM-04', health: 95 },
-                  { id: 'CAM-05', health: 67 },
-                  { id: 'CAM-06', health: 97 },
-                ].map((cam) => (
-                  <div key={cam.id} className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-theme-secondary">{cam.id}</span>
-                      <span className={`text-[10px] font-bold ${cam.health > 90 ? 'text-green-400' : cam.health > 70 ? 'text-yellow-400' : 'text-red-400'}`}>
-                        {cam.health}%
+              {/* Selected Node details */}
+              {(() => {
+                const nodeDetails = [
+                  { id: 'IN-S1', name: 'India South Node 1', region: 'India', location: 'Kasaragod HQ', health: outageSimulation ? 84 : 98, load: outageSimulation ? 72 : 45, servers: 20, active: outageSimulation ? 18 : 20 },
+                  { id: 'IN-S2', name: 'India South Node 2', region: 'India', location: 'Kasaragod Perimeter', health: 96, load: 48, servers: 22, active: 21 },
+                  { id: 'IN-W1', name: 'India West Cluster', region: 'India', location: 'Goa Site', health: 99, load: 38, servers: 18, active: 18 },
+                  { id: 'IN-W2', name: 'India West Server', region: 'India', location: 'Panaji Server Room', health: outageSimulation ? 32 : 95, load: outageSimulation ? 94 : 52, servers: 15, active: outageSimulation ? 5 : 14 },
+                  { id: 'IN-N1', name: 'India North Cluster', region: 'India', location: 'Delhi Hub', health: 94, load: 50, servers: 25, active: 24 },
+                  { id: 'EU-C1', name: 'EU Central Main Hub', region: 'Europe', location: 'Frankfurt Node 1', health: 99, load: 35, servers: 40, active: 40 },
+                  { id: 'EU-C2', name: 'EU Central Backup Hub', region: 'Europe', location: 'Frankfurt Node 2', health: 98, load: 38, servers: 20, active: 20 },
+                  { id: 'EU-W1', name: 'EU West Gateway', region: 'Europe', location: 'Ireland Ingest Hub', health: 96, load: 44, servers: 30, active: 29 },
+                  { id: 'EU-W2', name: 'EU West Local Node', region: 'Europe', location: 'London Local Edge', health: outageSimulation ? 76 : 93, load: outageSimulation ? 72 : 58, servers: 20, active: outageSimulation ? 16 : 18 },
+                  { id: 'EU-S1', name: 'EU South Node', region: 'Europe', location: 'Milan Local Edge', health: 95, load: 49, servers: 15, active: 14 },
+                  { id: 'US-E1', name: 'US East Server Hub', region: 'US', location: 'Virginia S3 Gateway', health: 99, load: 42, servers: 30, active: 30 },
+                  { id: 'US-E2', name: 'US East Local Cluster', region: 'US', location: 'Boston Local Edge', health: 97, load: 55, servers: 20, active: 19 },
+                  { id: 'US-W1', name: 'US West Cloud Ingest', region: 'US', location: 'Oregon Server Node', health: outageSimulation ? 28 : 98, load: outageSimulation ? 98 : 40, servers: 25, active: outageSimulation ? 6 : 25 },
+                  { id: 'US-W2', name: 'US West Local Node', region: 'US', location: 'California Local Edge', health: 95, load: 60, servers: 15, active: 14 },
+                  { id: 'US-M1', name: 'US Mid Gateway', region: 'US', location: 'Texas Server Node', health: 98, load: 43, servers: 18, active: 18 },
+                  { id: 'US-S1', name: 'US South Local Node', region: 'US', location: 'Miami Local Edge', health: 96, load: 48, servers: 10, active: 10 },
+                  { id: 'AP-S1', name: 'APAC South Hub', region: 'APAC', location: 'Singapore Server Node', health: 99, load: 41, servers: 35, active: 35 },
+                  { id: 'AP-S2', name: 'APAC South Local', region: 'APAC', location: 'Singapore Local Edge', health: 97, load: 47, servers: 15, active: 15 },
+                  { id: 'AP-N1', name: 'APAC North Ingest', region: 'APAC', location: 'Tokyo Hub', health: 98, load: 39, servers: 25, active: 25 },
+                  { id: 'AP-N2', name: 'APAC North Local', region: 'APAC', location: 'Seoul Local Edge', health: 94, load: 54, servers: 20, active: 19 },
+                  { id: 'AP-E1', name: 'APAC East Node', region: 'APAC', location: 'Sydney Server Node', health: 98, load: 36, servers: 15, active: 15 },
+                  { id: 'AP-E2', name: 'APAC East Local', region: 'APAC', location: 'Sydney Local Edge', health: 96, load: 43, servers: 10, active: 10 },
+                  { id: 'AP-W1', name: 'APAC West Ingest', region: 'APAC', location: 'Hong Kong Node', health: 97, load: 42, servers: 20, active: 20 },
+                  { id: 'IN-E1', name: 'India East Cluster', region: 'India', location: 'Kolkata Node', health: 97, load: 46, servers: 12, active: 12 }
+                ].find(n => n.id === selectedClusterId) || {
+                  id: selectedClusterId, name: 'Active Cluster Node', region: 'Global', location: 'Remote Edge Location', health: 98, load: 45, servers: 20, active: 20
+                };
+
+                return (
+                  <div className="bg-bg-primary/70 border border-border-theme p-3 rounded-xl space-y-1.5 font-mono text-[10px] mt-2">
+                    <div className="flex justify-between font-bold text-text-theme-primary">
+                      <span>Node: {nodeDetails.name} ({nodeDetails.id})</span>
+                      <span className={nodeDetails.health > 90 ? 'text-green-400' : nodeDetails.health > 70 ? 'text-yellow-400' : 'text-red-400'}>
+                        HEALTH: {nodeDetails.health}%
                       </span>
                     </div>
-                    <div className="w-full bg-bg-primary rounded-full h-1.5 overflow-hidden border border-border-theme/40">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${cam.health > 90 ? 'bg-green-500' : cam.health > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${cam.health}%` }}
-                      />
+                    <div className="flex justify-between">
+                      <span className="text-text-theme-muted">Location:</span>
+                      <span className="text-text-theme-secondary">{nodeDetails.location}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-theme-muted">Active Servers:</span>
+                      <span className="text-text-theme-secondary">{nodeDetails.active} / {nodeDetails.servers}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-theme-muted">CPU / System Load:</span>
+                      <span className="text-text-theme-secondary">{nodeDetails.load}%</span>
                     </div>
                   </div>
-                ))}
+                );
+              })()}
+            </div>
+
+            {/* Widget 4: Simulation Controls */}
+            <div className="glass-panel p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center space-x-2 pb-3 border-b border-border-theme mb-3">
+                  <Cpu className="w-5 h-5 text-accent-theme-primary" />
+                  <h3 className="font-display font-semibold text-text-theme-primary text-sm">Ingestion Control Room</h3>
+                </div>
+
+                {/* AI Model selector */}
+                <div className="space-y-1.5 font-mono text-xs mb-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] text-text-theme-muted uppercase block">AI Model Deployment</label>
+                    <button
+                      onClick={() => setAiAnalysisActive(!aiAnalysisActive)}
+                      className={`text-[9px] font-bold cursor-pointer transition-colors ${aiAnalysisActive ? 'text-green-400' : 'text-text-theme-muted'}`}
+                    >
+                      {aiAnalysisActive ? '● ACTIVE' : '○ STANDBY'}
+                    </button>
+                  </div>
+                  <select
+                    value={activeAIModel}
+                    onChange={(e) => {
+                      setActiveAIModel(e.target.value);
+                      setModelLog(`RECONFIGURING SERVER NODES TO MODEL: ${e.target.value.toUpperCase()}... DEPLOYMENT SUCCESS.`);
+                    }}
+                    className="w-full bg-bg-primary border border-border-theme rounded-lg px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:border-accent-theme-primary text-text-theme-primary cursor-pointer"
+                  >
+                    <option value="YOLOv8 Edge">YOLOv8 Object Detection (Edge Nodes)</option>
+                    <option value="ResNet-101 Classifier">ResNet-101 Scene Classifier (VMS Core)</option>
+                    <option value="Custom C# VMS Filter">Custom C# VMS Ingestion Filter</option>
+                    <option value="Multi-Modal LLM Analyzer">Gemini-powered Multimodal Analyzer</option>
+                  </select>
+                </div>
+
+                {/* Simulation Logs Console */}
+                <div className="bg-bg-primary/90 border border-border-theme rounded-xl p-3 h-14 overflow-hidden font-mono text-[9px] text-text-theme-secondary leading-normal select-none mb-3">
+                  <span className="text-accent-theme-primary">&gt;&gt;</span> {modelLog}
+                </div>
               </div>
 
-              <div className="pt-2 border-t border-border-theme space-y-2 font-mono text-[10px] text-text-theme-muted">
-                <div className="flex justify-between">
-                  <span>AI Analysis:</span>
-                  <button
-                    onClick={() => setAiAnalysisActive(!aiAnalysisActive)}
-                    className={`font-bold cursor-pointer transition-colors ${aiAnalysisActive ? 'text-green-400' : 'text-text-theme-muted'}`}
-                  >
-                    {aiAnalysisActive ? '● ACTIVE' : '○ STANDBY'}
-                  </button>
+              {/* Outage Simulation Trigger & Play/Pause controls */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="flex-grow py-2 rounded-lg border border-border-theme hover:bg-bg-secondary font-mono text-xs font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-text-theme-secondary hover:text-text-theme-primary"
+                >
+                  {isPlaying ? <Pause className="w-3.5 h-3.5 text-yellow-500" /> : <Play className="w-3.5 h-3.5 text-green-500" />}
+                  <span>{isPlaying ? 'PAUSE' : 'RESUME'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const nextOutage = !outageSimulation;
+                    setOutageSimulation(nextOutage);
+                    setModelLog(nextOutage 
+                      ? 'WARNING: SIMULATING CRITICAL SIGNAL LOSS EXCEPTION ON 3 CLUSTERS!'
+                      : 'ALERT CLEARED. RESTORING SERVER REDUNDANCY PIPELINES...' 
+                    );
+                  }}
+                  className={`flex-grow py-2 rounded-lg border font-mono text-xs font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-glow ${
+                    outageSimulation
+                      ? 'bg-green-500/10 border-green-500/35 hover:bg-green-500 hover:text-bg-primary text-green-400'
+                      : 'bg-red-500/10 border-red-500/35 hover:bg-red-500 hover:text-bg-primary text-red-400'
+                  }`}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>{outageSimulation ? 'CLEAR OUTAGE' : 'TRIGGER OUTAGE'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Widget 5: Stream Connectivity & Health */}
+            <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+              <div>
+                <div className="flex items-center space-x-2 pb-3 border-b border-border-theme mb-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 animate-pulse" />
+                  <h3 className="font-display font-semibold text-text-theme-primary text-sm">Camera Ingest Health</h3>
                 </div>
-                <div className="flex justify-between">
-                  <span>VMS Engine:</span>
-                  <span className="text-text-theme-primary">XProtect</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg Health:</span>
-                  <span className="text-accent-theme-primary font-bold">83.2%</span>
+                <p className="text-[11px] text-text-theme-muted font-mono mb-4">
+                  Stream connectivity states for {selectedRegion === 'ALL' ? 'Global' : selectedRegion} cameras:
+                </p>
+
+                <div className="space-y-3 font-mono text-[11px]">
+                  {/* Online & Streaming */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-text-theme-secondary font-medium">Online & Streaming</span>
+                      <span className="text-green-400 font-bold">
+                        {(outageSimulation ? 9612 : 10388).toLocaleString()} <span className="text-[9px] text-text-theme-muted">({outageSimulation ? '91.7%' : '99.1%'})</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-bg-primary h-1.5 rounded-full overflow-hidden border border-border-theme/30">
+                      <div className="bg-green-500 h-full rounded-full transition-all duration-500" style={{ width: outageSimulation ? '91.7%' : '99.1%' }} />
+                    </div>
+                  </div>
+
+                  {/* Degraded Streams */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-text-theme-secondary font-medium">Degraded Streams</span>
+                      <span className="text-yellow-400 font-bold">
+                        {(outageSimulation ? 582 + (processedFrames % 15) : 82 + (processedFrames % 5)).toLocaleString()} <span className="text-[9px] text-text-theme-muted">({outageSimulation ? '5.6%' : '0.8%'})</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-bg-primary h-1.5 rounded-full overflow-hidden border border-border-theme/30">
+                      <div className="bg-yellow-500 h-full rounded-full transition-all duration-500" style={{ width: outageSimulation ? '5.6%' : '0.8%' }} />
+                    </div>
+                  </div>
+
+                  {/* Connection Loss */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-text-theme-secondary font-medium">Offline State</span>
+                      <span className="text-red-400 font-bold">
+                        {(outageSimulation ? 288 : 12).toLocaleString()} <span className="text-[9px] text-text-theme-muted">({outageSimulation ? '2.7%' : '0.1%'})</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-bg-primary h-1.5 rounded-full overflow-hidden border border-border-theme/30">
+                      <div className="bg-red-500 h-full rounded-full transition-all duration-500" style={{ width: outageSimulation ? '2.7%' : '0.1%' }} />
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Bottom statistics summary */}
+              <div className="mt-4 pt-3 border-t border-border-theme/40 flex justify-between items-center text-[10px] font-mono text-text-theme-muted">
+                <span>Avg Resolution: <strong className="text-text-theme-secondary">1080p</strong></span>
+                <span>Uptime: <strong className="text-green-400">99.98%</strong></span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Alarm Stream widget at the bottom */}
+          <div className="glass-panel p-5 rounded-2xl mt-6">
+            <div className="flex items-center justify-between pb-3 border-b border-border-theme mb-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center space-x-2">
+                  <Terminal className="w-5 h-5 text-accent-theme-primary" />
+                  <h3 className="font-display font-semibold text-text-theme-primary text-sm">Aggregated Active Alarm Stream</h3>
+                </div>
+                <span className="text-[9px] font-mono bg-accent-theme-primary/10 text-accent-theme-primary px-2.5 py-0.5 rounded border border-accent-theme-primary/20">
+                  Total Captured: <strong className="text-text-theme-primary">{anomalyCounter}</strong>
+                </span>
+                {selectedCamera && (
+                  <span className="text-[9px] font-mono bg-green-500/10 text-green-400 px-2.5 py-0.5 rounded border border-green-500/20">
+                    Focus: <strong className="text-text-theme-primary">{selectedCamera}</strong>
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-mono text-text-theme-muted uppercase hidden sm:inline">Click a row to focus camera feed</span>
+            </div>
+
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="w-full text-left font-mono text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border-theme text-text-theme-muted text-[10px]">
+                    <th className="py-2 pr-2">TIMESTAMP</th>
+                    <th className="py-2 px-2">SITE LOCATION</th>
+                    <th className="py-2 px-2">CAMERA ID</th>
+                    <th className="py-2 px-2">ALARM EXCEPTION</th>
+                    <th className="py-2 px-2 text-center">PRIORITY</th>
+                    <th className="py-2 pl-2 text-right">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeAlarms.map((alarm) => (
+                    <tr
+                      key={alarm.id}
+                      onClick={() => {
+                        setSelectedCamera(`${alarm.cam} (${alarm.site.split(' ')[0]})`);
+                        setAiAnalysisActive(true);
+                      }}
+                      className={`border-b border-border-theme/40 hover:bg-bg-secondary/20 transition-colors cursor-pointer ${
+                        selectedCamera.startsWith(alarm.cam) ? 'bg-accent-theme-primary/10 border-l-2 border-l-accent-theme-primary' : ''
+                      }`}
+                    >
+                      <td className="py-2.5 pr-2 text-text-theme-muted">{alarm.time}</td>
+                      <td className="py-2.5 px-2 text-text-theme-secondary">{alarm.site}</td>
+                      <td className="py-2.5 px-2 text-text-theme-primary font-bold">{alarm.cam}</td>
+                      <td className="py-2.5 px-2 text-text-theme-secondary">{alarm.type}</td>
+                      <td className="py-2.5 px-2 text-center">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          alarm.priority === 'CRITICAL' 
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                            : alarm.priority === 'MAJOR'
+                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                            : 'bg-accent-theme-primary/10 text-accent-theme-primary border border-accent-theme-primary/20'
+                        }`}>
+                          {alarm.priority}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pl-2 text-right">
+                        {alarm.status === 'Active' ? (
+                          <span className="inline-flex items-center text-[10px] text-green-400 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1 animate-ping" />
+                            ACTIVE
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-text-theme-muted">RESOLVED</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
