@@ -22,13 +22,6 @@ const GitHubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 );
 
 // Types
-interface LogEntry {
-  timestamp: string;
-  source: string;
-  message: string;
-  type: 'info' | 'success' | 'warn' | 'error';
-}
-
 interface Project {
   title: string;
   role: string;
@@ -62,14 +55,7 @@ export default function App() {
   const [selectedCamera, setSelectedCamera] = useState('CAM-01 (Kasaragod-HQ)');
   const [aiAnalysisActive, setAiAnalysisActive] = useState(true);
   const [processedFrames, setProcessedFrames] = useState(482019);
-  const [telemetryValues, setTelemetryValues] = useState<number[]>([40, 55, 45, 60, 52, 70, 65, 80, 75, 85, 90, 82, 88, 95]);
   const [anomalyCounter, setAnomalyCounter] = useState(14);
-  const [systemLogs, setSystemLogs] = useState<LogEntry[]>([
-    { timestamp: '20:14:53', source: 'VMS-PLUGIN', message: 'Milestone XProtect Smart Client session initialized.', type: 'info' },
-    { timestamp: '20:15:02', source: 'METADATA-PIPELINE', message: 'RTSP video stream ingested successfully (25 FPS).', type: 'success' },
-    { timestamp: '20:15:10', source: 'AI-MODULE', message: 'NLP Parser loaded. Mapping search tokens from voice logs.', type: 'info' },
-    { timestamp: '20:15:15', source: 'AWS-FEED', message: 'HIPAA-compliant payload processed on AWS Lambda: 200 OK.', type: 'success' },
-  ]);
 
   // Skill matrix active filter
   const [skillCategory, setSkillCategory] = useState<'all' | 'languages' | 'backend' | 'frontend' | 'infrastructure'>('all');
@@ -106,44 +92,9 @@ export default function App() {
       // Increment frames
       setProcessedFrames(prev => prev + Math.floor(Math.random() * 15) + 10);
 
-      // Randomly update telemetry graph
-      setTelemetryValues(prev => {
-        const next = [...prev.slice(1)];
-        const lastVal = prev[prev.length - 1];
-        const change = Math.floor(Math.random() * 15) - 7;
-        const newVal = Math.max(10, Math.min(100, lastVal + change));
-        next.push(newVal);
-        return next;
-      });
-
       // Occasional anomalies
       if (Math.random() > 0.85) {
         setAnomalyCounter(prev => prev + 1);
-        const logTypes: Array<LogEntry['type']> = ['warn', 'error', 'success'];
-        const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
-        const sources = ['AI-MODULE', 'VMS-PLUGIN', 'DATABASE-CLUSTER', 'HIPAA-PIPELINE'];
-        const source = sources[Math.floor(Math.random() * sources.length)];
-        
-        let message = '';
-        if (source === 'AI-MODULE') {
-          message = aiAnalysisActive 
-            ? 'Blur & occlusion detection triggered on Camera 104.'
-            : 'Static analysis mode selected. Skipping neural parsing.';
-        } else if (source === 'VMS-PLUGIN') {
-          message = 'Milestone C# SDK payload serialized (Smart Client overlay updated).';
-        } else if (source === 'DATABASE-CLUSTER') {
-          message = 'MongoDB cluster re-indexed. Event caching speed: 1.2ms.';
-        } else {
-          message = 'Patient engagement redundancy replication verified (S3 backup sync).';
-        }
-
-        const now = new Date();
-        const timeStr = now.toTimeString().split(' ')[0];
-
-        setSystemLogs(prev => [
-          ...prev.slice(-9),
-          { timestamp: timeStr, source, message, type: logType }
-        ]);
       }
     }, 1500);
 
@@ -657,193 +608,224 @@ export default function App() {
 
         </section>
 
-        {/* Section B: VMS Telemetry Ingestion Simulator Dashboard */}
+        {/* Section B: VMS Camera Intelligence Monitor */}
         <section id="dashboard" className="scroll-mt-20">
           <div className="text-center space-y-3 mb-10">
-            <h2 className="font-display text-3xl font-bold tracking-tight">Real-Time Observability Terminal</h2>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-text-theme-primary">VMS Camera Intelligence Monitor</h2>
             <p className="text-text-theme-secondary max-w-2xl mx-auto text-sm sm:text-base">
-              Explore a simulation of the camera analytics plugins I build. This component displays live event feeds and performance logs routed from simulated cameras directly integrated with VMS.
+              A real-time simulation of the AI camera analytics platform I architect at Conexao — integrated with Milestone XProtect VMS, processing 1000+ live feeds concurrently.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Ingestion Panel Controls */}
-            <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-6">
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 pb-3 border-b border-border-theme">
-                  <Video className="w-5 h-5 text-accent-theme-primary" />
-                  <h3 className="font-display font-semibold text-text-theme-primary">VMS Feed Selector</h3>
-                </div>
+          {/* Top Bar: System Status */}
+          <div className="glass-panel rounded-xl px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs font-mono border border-border-theme">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                <span className="text-green-400 font-bold">VMS ONLINE</span>
+              </div>
+              <span className="text-text-theme-muted hidden sm:inline">Milestone XProtect Smart Client v23.3</span>
+            </div>
+            <div className="flex items-center space-x-4 text-text-theme-muted">
+              <span>Cameras: <strong className="text-text-theme-primary">1000 / 1000</strong></span>
+              <span>Frames: <strong className="text-accent-theme-primary">{processedFrames.toLocaleString()}</strong></span>
+              <span>Alerts: <strong className="text-red-400">{anomalyCounter}</strong></span>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="flex items-center space-x-1 px-2 py-1 rounded border border-border-theme hover:border-border-theme-hover transition-all cursor-pointer"
+              >
+                {isPlaying ? <Pause className="w-3 h-3 text-yellow-400" /> : <Play className="w-3 h-3 text-green-400" />}
+                <span className="text-[10px] font-bold">{isPlaying ? 'PAUSE' : 'RESUME'}</span>
+              </button>
+            </div>
+          </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-mono text-text-theme-muted uppercase">Select Active Camera Node</label>
-                  <div className="space-y-1.5">
-                    {['CAM-01 (Kasaragod-HQ)', 'CAM-02 (Milestone-XProtect-Plugin)', 'CAM-03 (AWS-HealthFeed-Gateway)'].map(cam => (
-                      <button
-                        key={cam}
-                        onClick={() => setSelectedCamera(cam)}
-                        className={`w-full text-left p-2.5 rounded-lg border text-xs font-mono flex items-center justify-between transition-all cursor-pointer ${selectedCamera === cam ? 'border-accent-theme-primary bg-accent-theme-primary/10 text-accent-theme-primary font-bold' : 'border-border-theme hover:bg-bg-secondary/40 text-text-theme-secondary'}`}
-                      >
-                        <span>{cam}</span>
-                        {selectedCamera === cam && <CheckCircle className="w-4 h-4" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
 
-                <div className="pt-2 space-y-3">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-text-theme-secondary">Neural Metadata Processing:</span>
-                    <button
-                      onClick={() => setAiAnalysisActive(!aiAnalysisActive)}
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all cursor-pointer ${aiAnalysisActive ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-text-theme-muted/20 text-text-theme-muted border border-border-theme'}`}
-                    >
-                      {aiAnalysisActive ? 'ACTIVE' : 'STANDBY'}
-                    </button>
-                  </div>
+            {/* Camera Grid: 3 cols on left */}
+            <div className="lg:col-span-3 space-y-4">
 
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-text-theme-secondary">Stream telemetry:</span>
-                    <button
-                      onClick={() => setIsPlaying(!isPlaying)}
-                      className="p-1 rounded bg-bg-secondary border border-border-theme hover:border-border-theme-hover text-text-theme-primary flex items-center space-x-1 cursor-pointer"
-                    >
-                      {isPlaying ? <Pause className="w-3.5 h-3.5 text-yellow-500" /> : <Play className="w-3.5 h-3.5 text-green-500" />}
-                      <span className="text-[10px] px-1 font-bold">{isPlaying ? 'PAUSE' : 'RESUME'}</span>
-                    </button>
+              {/* 3x2 Camera Feed Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                {[
+                  { id: 'CAM-01', loc: 'Kasaragod HQ — Lobby', status: 'online', blur: 1.2, obstruction: 0, fps: 25, alert: false },
+                  { id: 'CAM-02', loc: 'Panaji — Server Room', status: 'online', blur: 0.8, obstruction: 0, fps: 25, alert: false },
+                  { id: 'CAM-03', loc: 'Goa — Parking Zone', status: 'alert', blur: 6.4, obstruction: 12, fps: 24, alert: true },
+                  { id: 'CAM-04', loc: 'Remote — Gateway Node', status: 'online', blur: 1.1, obstruction: 0, fps: 25, alert: false },
+                  { id: 'CAM-05', loc: 'AWS — HealthFeed Edge', status: 'degraded', blur: 3.3, obstruction: 5, fps: 18, alert: false },
+                  { id: 'CAM-06', loc: 'Kasaragod — Perimeter', status: 'online', blur: 0.9, obstruction: 0, fps: 25, alert: false },
+                ].map((cam) => (
+                  <div
+                    key={cam.id}
+                    onClick={() => setSelectedCamera(cam.id)}
+                    className={`relative aspect-video rounded-xl overflow-hidden border cursor-pointer transition-all group ${
+                      selectedCamera.startsWith(cam.id)
+                        ? 'border-accent-theme-primary shadow-lg scale-[1.02]'
+                        : cam.status === 'alert'
+                        ? 'border-red-500/60 hover:border-red-500'
+                        : cam.status === 'degraded'
+                        ? 'border-yellow-500/40 hover:border-yellow-400'
+                        : 'border-border-theme hover:border-border-theme-hover'
+                    }`}
+                    style={{ background: 'var(--bg-primary)' }}
+                  >
+                    {/* Scanline CRT overlay */}
+                    <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.08)_2px,rgba(0,0,0,0.08)_4px)] pointer-events-none z-10" />
+
+                    {/* AI Bounding box */}
+                    {cam.status !== 'degraded' && (
+                      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-20 ${cam.alert ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                        <div className={`relative w-14 h-10 border-2 rounded-sm ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'} animate-pulse`}>
+                          <div className={`absolute -top-0.5 -left-0.5 w-2 h-2 border-t-2 border-l-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
+                          <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 border-t-2 border-r-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
+                          <div className={`absolute -bottom-0.5 -left-0.5 w-2 h-2 border-b-2 border-l-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
+                          <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 border-b-2 border-r-2 ${cam.alert ? 'border-red-400' : 'border-accent-theme-primary'}`} />
+                          <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-[7px] font-mono px-1 rounded whitespace-nowrap ${cam.alert ? 'bg-red-500/80 text-white' : 'bg-accent-theme-primary/80 text-bg-primary'}`}>
+                            {cam.alert ? 'ANOMALY' : 'TRACKING'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top-left: Camera ID + status dot */}
+                    <div className="absolute top-1.5 left-1.5 z-30 flex items-center space-x-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${cam.status === 'online' ? 'bg-green-500' : cam.status === 'alert' ? 'bg-red-500 animate-ping' : 'bg-yellow-500'}`} />
+                      <span className="text-[9px] font-mono font-bold text-white bg-black/50 px-1 rounded">{cam.id}</span>
+                    </div>
+
+                    {/* Top-right: REC */}
+                    <div className="absolute top-1.5 right-1.5 z-30">
+                      {cam.status !== 'degraded' && (
+                        <span className="text-[8px] font-mono text-red-400 bg-black/50 px-1 rounded flex items-center space-x-0.5">
+                          <span className="w-1 h-1 rounded-full bg-red-500 animate-ping inline-block" />
+                          <span>REC</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Center grid pattern */}
+                    <div className="absolute inset-0 flex items-center justify-center z-0">
+                      <svg viewBox="0 0 60 40" className={`w-3/4 opacity-10 ${cam.alert ? 'text-red-500' : 'text-accent-theme-primary'}`}>
+                        <rect x="5" y="5" width="50" height="30" stroke="currentColor" strokeWidth="0.5" fill="none" />
+                        <line x1="5" y1="20" x2="55" y2="20" stroke="currentColor" strokeWidth="0.3" />
+                        <line x1="30" y1="5" x2="30" y2="35" stroke="currentColor" strokeWidth="0.3" />
+                        <circle cx="30" cy="20" r="8" stroke="currentColor" strokeWidth="0.5" fill="none" />
+                      </svg>
+                    </div>
+
+                    {/* Bottom: Location + FPS + blur */}
+                    <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                      <p className="text-[8px] text-white/80 font-mono leading-tight truncate">{cam.loc}</p>
+                      <div className="flex justify-between mt-0.5">
+                        <span className="text-[7px] font-mono text-white/60">FPS: {cam.fps}</span>
+                        <span className={`text-[7px] font-mono font-bold ${cam.blur > 4 ? 'text-red-400' : cam.blur > 2 ? 'text-yellow-400' : 'text-green-400'}`}>
+                          BLUR: {cam.blur}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Alert pulse border */}
+                    {cam.alert && (
+                      <div className="absolute inset-0 border-2 border-red-500 rounded-xl animate-pulse pointer-events-none z-40 opacity-60" />
+                    )}
                   </div>
-                </div>
+                ))}
               </div>
 
-              {/* Telemetry quick status overview */}
-              <div className="bg-bg-secondary/60 border border-border-theme p-4 rounded-xl space-y-2.5 font-mono text-xs">
-                <div className="flex justify-between">
-                  <span className="text-text-theme-muted">VMS Engine:</span>
-                  <span className="text-text-theme-primary font-semibold">Milestone XProtect</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-theme-muted">Metadata Frames:</span>
-                  <span className="text-accent-theme-primary font-bold">{processedFrames.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-theme-muted">Alert Anomalies:</span>
-                  <span className="text-red-500 font-bold">{anomalyCounter}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-theme-muted">System State:</span>
-                  <span className="text-green-500 flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-ping" />
-                    HEALTHY
+              {/* Alert Ticker Strip */}
+              <div className="glass-panel rounded-xl px-4 py-2.5 border border-border-theme overflow-hidden">
+                <div className="flex items-center space-x-3">
+                  <span className="text-[10px] font-mono font-bold text-red-400 shrink-0 flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                    <span>LIVE ALERTS</span>
                   </span>
+                  <div className="overflow-hidden flex-grow relative h-4">
+                    <div className="flex gap-8 text-[10px] font-mono absolute whitespace-nowrap animate-ticker" style={{ animation: 'ticker 25s linear infinite' }}>
+                      {[
+                        '⚠ CAM-03: Blur threshold exceeded (6.4) — Goa Parking Zone',
+                        '✓ CAM-01: NLP metadata parse complete — 482,031 frames OK',
+                        '⚠ CAM-05: Frame rate degraded to 18 FPS — AWS Edge Node',
+                        '✓ AI-MODULE: Anomaly scored and logged to MongoDB cluster',
+                        '✓ VMS-PLUGIN: Milestone XProtect Smart Client overlay sync OK',
+                        '⚠ CAM-03: Partial obstruction detected (12%) — review required',
+                        '✓ HIPAA-PIPELINE: HealthFeed redundancy check passed on AWS S3',
+                      ].map((msg, i) => (
+                        <span key={i} className={msg.startsWith('⚠') ? 'text-yellow-400 animate-pulse' : 'text-green-400'}>
+                          {msg}
+                        </span>
+                      ))}
+                      {/* Duplicate for infinite seamless scroll */}
+                      {[
+                        '⚠ CAM-03: Blur threshold exceeded (6.4) — Goa Parking Zone',
+                        '✓ CAM-01: NLP metadata parse complete — 482,031 frames OK',
+                        '⚠ CAM-05: Frame rate degraded to 18 FPS — AWS Edge Node',
+                        '✓ AI-MODULE: Anomaly scored and logged to MongoDB cluster',
+                        '✓ VMS-PLUGIN: Milestone XProtect Smart Client overlay sync OK',
+                        '⚠ CAM-03: Partial obstruction detected (12%) — review required',
+                        '✓ HIPAA-PIPELINE: HealthFeed redundancy check passed on AWS S3',
+                      ].map((msg, i) => (
+                        <span key={`dup-${i}`} className={msg.startsWith('⚠') ? 'text-yellow-400 animate-pulse' : 'text-green-400'}>
+                          {msg}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-
             </div>
 
-            {/* Ingestion Stream Console */}
-            <div className="glass-panel p-5 rounded-2xl lg:col-span-2 flex flex-col justify-between gap-6">
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-border-theme">
-                  <div className="flex items-center space-x-2">
-                    <Terminal className="w-5 h-5 text-accent-theme-secondary" />
-                    <h3 className="font-display font-semibold text-text-theme-primary">Event Stream & Log Diagnostics</h3>
-                  </div>
-                  <span className="font-mono text-[10px] text-text-theme-muted bg-bg-secondary px-2.5 py-0.5 rounded border border-border-theme">
-                    {selectedCamera.split(' ')[0]}
-                  </span>
-                </div>
+            {/* Right Sidebar: Camera Health Scores */}
+            <div className="glass-panel p-4 rounded-xl flex flex-col gap-4 border border-border-theme">
+              <div className="flex items-center space-x-2 pb-2 border-b border-border-theme">
+                <Activity className="w-4 h-4 text-accent-theme-primary" />
+                <h3 className="font-display font-semibold text-text-theme-primary text-sm">Camera Health</h3>
+              </div>
 
-                {/* Simulated Terminal Log Output */}
-                <div className="bg-bg-primary border border-border-theme/80 rounded-xl p-4 min-h-[170px] max-h-[170px] overflow-y-auto font-mono text-xs space-y-1.5 no-scrollbar scroll-smooth">
-                  {systemLogs.map((log, idx) => (
-                    <div key={idx} className="flex items-start space-x-2 text-[11px] leading-relaxed">
-                      <span className="text-text-theme-muted select-none">[{log.timestamp}]</span>
-                      <span className={`font-bold select-none px-1 rounded text-[10px] ${
-                        log.type === 'success' ? 'bg-green-500/10 text-green-400' :
-                        log.type === 'warn' ? 'bg-yellow-500/10 text-yellow-400' :
-                        log.type === 'error' ? 'bg-red-500/10 text-red-400' :
-                        'bg-accent-theme-primary/10 text-accent-theme-primary'
-                      }`}>
-                        {log.source}
+              <div className="space-y-3 font-mono text-xs flex-grow">
+                {[
+                  { id: 'CAM-01', health: 98 },
+                  { id: 'CAM-02', health: 99 },
+                  { id: 'CAM-03', health: 43 },
+                  { id: 'CAM-04', health: 95 },
+                  { id: 'CAM-05', health: 67 },
+                  { id: 'CAM-06', health: 97 },
+                ].map((cam) => (
+                  <div key={cam.id} className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-theme-secondary">{cam.id}</span>
+                      <span className={`text-[10px] font-bold ${cam.health > 90 ? 'text-green-400' : cam.health > 70 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {cam.health}%
                       </span>
-                      <span className="text-text-theme-secondary">{log.message}</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="w-full bg-bg-primary rounded-full h-1.5 overflow-hidden border border-border-theme/40">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${cam.health > 90 ? 'bg-green-500' : cam.health > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${cam.health}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* Dynamic Telemetry Graph Area - Handdrawn SVG for reliability & visuals */}
-              <div>
-                <div className="flex items-center justify-between mb-2 text-xs font-mono">
-                  <span className="text-text-theme-secondary">Processor Ingestion Load (100% capacity threshold)</span>
-                  <span className="text-accent-theme-primary flex items-center">
-                    <Activity className="w-3.5 h-3.5 mr-1" />
-                    LIVE TELEMETRY
-                  </span>
+              <div className="pt-2 border-t border-border-theme space-y-2 font-mono text-[10px] text-text-theme-muted">
+                <div className="flex justify-between">
+                  <span>AI Analysis:</span>
+                  <button
+                    onClick={() => setAiAnalysisActive(!aiAnalysisActive)}
+                    className={`font-bold cursor-pointer transition-colors ${aiAnalysisActive ? 'text-green-400' : 'text-text-theme-muted'}`}
+                  >
+                    {aiAnalysisActive ? '● ACTIVE' : '○ STANDBY'}
+                  </button>
                 </div>
-
-                <div className="bg-bg-primary/50 border border-border-theme rounded-xl p-3 h-24 relative overflow-hidden flex items-end">
-                  
-                  {/* Grid Lines Overlay */}
-                  <div className="absolute inset-0 grid grid-rows-3 grid-cols-10 pointer-events-none opacity-20 border-b border-border-theme">
-                    {[...Array(30)].map((_, i) => (
-                      <div key={i} className="border-t border-l border-border-theme/40" />
-                    ))}
-                  </div>
-
-                  {/* SVG Chart Line */}
-                  <svg className="w-full h-full absolute inset-0 pt-2" viewBox="0 0 400 80" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Gradient Fill under line */}
-                    <path
-                      d={`M 0 80 L ${telemetryValues.map((v, i) => `${(i * 400) / (telemetryValues.length - 1)} ${80 - (v * 0.7)}`).join(' L ')} L 400 80 Z`}
-                      fill="url(#chartGradient)"
-                    />
-
-                    {/* Glowing Stroke Line */}
-                    <path
-                      d={telemetryValues.map((v, i) => `${i === 0 ? 'M' : 'L'} ${(i * 400) / (telemetryValues.length - 1)} ${80 - (v * 0.7)}`).join(' ')}
-                      fill="none"
-                      stroke="var(--accent-primary)"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Glowing endpoint */}
-                    <circle 
-                      cx="400" 
-                      cy={80 - (telemetryValues[telemetryValues.length - 1] * 0.7)} 
-                      r="4" 
-                      fill="var(--accent-primary)" 
-                      className="animate-ping" 
-                    />
-                    <circle 
-                      cx="400" 
-                      cy={80 - (telemetryValues[telemetryValues.length - 1] * 0.7)} 
-                      r="3.5" 
-                      fill="var(--accent-secondary)" 
-                    />
-                  </svg>
-
-                  {/* Overlay text metrics */}
-                  <div className="absolute bottom-2 left-3 font-mono text-[10px] text-text-theme-muted">
-                    Telemetry Frequency: 1.5s intervals
-                  </div>
-                  <div className="absolute top-2 right-3 font-mono text-[11px] text-accent-theme-primary font-bold text-glow">
-                    {telemetryValues[telemetryValues.length - 1]}% Load
-                  </div>
+                <div className="flex justify-between">
+                  <span>VMS Engine:</span>
+                  <span className="text-text-theme-primary">XProtect</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Avg Health:</span>
+                  <span className="text-accent-theme-primary font-bold">83.2%</span>
                 </div>
               </div>
-
             </div>
           </div>
         </section>
