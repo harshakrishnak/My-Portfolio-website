@@ -3,7 +3,7 @@ import {
   Terminal, Cpu, Activity, Video, CheckCircle, 
   Mail, Calendar, Download, ChevronRight, 
   Menu, X, Server, Database, Code, TrendingUp, Sun, Moon, Workflow, 
-  Eye, RefreshCw, Play, Pause, Send, Briefcase, GraduationCap
+  Eye, RefreshCw, Play, Pause, Send, Briefcase, GraduationCap, ExternalLink
 } from 'lucide-react';
 
 const LinkedInIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -441,7 +441,8 @@ export default function App() {
       forks: 0,
       url: 'https://github.com/harshakrishnak/sentiment-analizer',
       hasDemo: true,
-      demoType: 'modal-sentiment'
+      demoType: 'modal-sentiment',
+      demoUrl: 'https://sentiment-analizer-m3pn.onrender.com/'
     },
     {
       name: 'My-Portfolio-website',
@@ -2275,6 +2276,17 @@ export default function App() {
 
             {/* Modal Footer */}
             <div className="mt-6 pt-3 border-t border-border-theme flex justify-end gap-2 text-xs">
+              {githubProjects.find(p => p.demoType === (activeGithubDemo === 'mcp' ? 'modal-mcp' : 'modal-sentiment'))?.demoUrl && (
+                <a 
+                  href={githubProjects.find(p => p.demoType === (activeGithubDemo === 'mcp' ? 'modal-mcp' : 'modal-sentiment'))?.demoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-green-500/10 border border-green-500/30 hover:bg-green-500 hover:text-bg-primary text-green-400 font-bold rounded-lg transition-all flex items-center cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  <span>Launch Live App</span>
+                </a>
+              )}
               <a 
                 href={githubProjects.find(p => p.demoType === (activeGithubDemo === 'mcp' ? 'modal-mcp' : 'modal-sentiment'))?.url || "https://github.com/harshakrishnak"}
                 target="_blank"
