@@ -41,6 +41,18 @@ interface Job {
   achievements: string[];
 }
 
+interface GithubProject {
+  name: string;
+  description: string;
+  tech: string[];
+  stars: number;
+  forks: number;
+  url: string;
+  demoType: 'modal-mcp' | 'modal-sentiment' | 'scroll' | 'external';
+  demoUrl?: string;
+  hasDemo: boolean;
+}
+
 export default function App() {
   // Theme state
   const [theme, setTheme] = useState<string>(() => {
@@ -82,8 +94,129 @@ export default function App() {
   const [formTerminalLogs, setFormTerminalLogs] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // GitHub Projects States
+  const [activeGithubDemo, setActiveGithubDemo] = useState<string | null>(null); // 'mcp' | 'sentiment' | null
+  
+  // Interactive simulator states for Camera-DB-MCP
+  const [simMcpQuery, setSimMcpQuery] = useState<string>('get_camera_stats');
+  const [simMcpResult, setSimMcpResult] = useState<string>(() => JSON.stringify({
+    total_cameras: 10000,
+    active_streams: 9842,
+    error_states: 158,
+    manufacturers: {
+      Axis: 4200,
+      Hikvision: 3100,
+      Hanwha: 1800,
+      Dahua: 900
+    },
+    recording_servers: 24,
+    average_fps: 29.8
+  }, null, 2));
+  const [simMcpLoading, setSimMcpLoading] = useState<boolean>(false);
+  const [simMcpLogs, setSimMcpLogs] = useState<string[]>([
+    'System: Camera-DB-MCP Server initialized on port 3010.',
+    'System: Model Context Protocol (MCP) transport active over stdio.',
+    'System: Loaded 10,000 CCTV cameras with full observability schemas.',
+    'Ready for queries.'
+  ]);
+
+  // Interactive simulator states for sentiment-analizer
+  const [simSentimentInput, setSimSentimentInput] = useState<string>(
+    'System telemetry is working perfectly! Edge anomaly pipeline running smoothly with zero latency spikes.'
+  );
+  const [simSentimentResult, setSimSentimentResult] = useState<{
+    pos: number;
+    neu: number;
+    neg: number;
+    compound: number;
+  }>({ pos: 35, neu: 65, neg: 0, compound: 0.72 });
+
+  // Simple client-side VADER sentiment approximation
+  const analyzeSentimentLocal = (text: string) => {
+    const t = text.toLowerCase();
+    const posWords = ['great', 'excellent', 'fantastic', 'awesome', 'good', 'success', 'healthy', 'stable', 'perfect', 'normal', 'operational', 'up', 'faster', 'optimized', 'resolved', 'recovered', 'online', 'smoothly', 'perfectly', 'satisfied', 'love'];
+    const negWords = ['bad', 'error', 'failed', 'outage', 'issue', 'broken', 'slow', 'warning', 'critical', 'danger', 'down', 'exception', 'tamper', 'loss', 'lagging', 'latency', 'high', 'incident', 'unstable', 'offline', 'poor', 'spikes'];
+    
+    let posCount = 0;
+    let negCount = 0;
+    
+    const words = t.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").split(/\s+/);
+    words.forEach(w => {
+      if (posWords.includes(w)) posCount++;
+      if (negWords.includes(w)) negCount++;
+    });
+    
+    const total = posCount + negCount;
+    if (total === 0) {
+      return { pos: 0, neu: 100, neg: 0, compound: 0 };
+    }
+    
+    const rawPos = (posCount / (posCount + negCount)) * 100;
+    const rawNeg = (negCount / (posCount + negCount)) * 100;
+    
+    const posPct = Math.round(rawPos * 0.8);
+    const negPct = Math.round(rawNeg * 0.8);
+    const neuPct = 100 - posPct - negPct;
+    
+    let compound = 0;
+    if (posCount > negCount) {
+      compound = Number((posCount / (posCount + 2)).toFixed(2));
+    } else if (negCount > posCount) {
+      compound = Number((-negCount / (negCount + 2)).toFixed(2));
+    }
+    
+    return { pos: posPct, neu: neuPct, neg: negPct, compound };
+  };
+
+  // Simulated query handler for Camera-DB-MCP
+  const runMcpQuery = (queryType: string) => {
+    setSimMcpLoading(true);
+    setSimMcpQuery(queryType);
+    
+    const timestamp = new Date().toTimeString().split(' ')[0];
+    setSimMcpLogs(prev => [
+      ...prev,
+      `[${timestamp}] CLI: query_engine run_tool --name camera_db_mcp/${queryType}`
+    ].slice(-8));
+
+    setTimeout(() => {
+      let result = {};
+      if (queryType === 'list_cameras') {
+        result = [
+          { id: 'cam_0082', name: 'Axis M3007 Dome', location: 'Building A - North Lobby', ip: '10.244.1.82', status: 'active', resolution: '1080p' },
+          { id: 'cam_0194', name: 'Axis Q6055 PTZ', location: 'Building A - Perimeter West', ip: '10.244.1.94', status: 'active', resolution: '1080p' }
+        ];
+      } else if (queryType === 'get_camera_stats') {
+        result = {
+          total_cameras: 10000,
+          online_cameras: 9842,
+          offline_cameras: 158,
+          critical_alerts: 4,
+          network_load: '842 Mbps',
+          db_indexing_ms: 1.8
+        };
+      } else if (queryType === 'search_cameras') {
+        result = [
+          { id: 'cam_7492', name: 'Hanwha XNP-6400 PTZ', location: 'Gate 4 Entrance', ip: '10.244.12.54', status: 'active', features: ['autotracking', 'license_plate'] }
+        ];
+      } else {
+        result = { error: 'Unknown MCP tool instruction' };
+      }
+
+      setSimMcpResult(JSON.stringify(result, null, 2));
+      setSimMcpLoading(false);
+      
+      const finishTimestamp = new Date().toTimeString().split(' ')[0];
+      setSimMcpLogs(prev => [
+        ...prev,
+        `[${finishTimestamp}] MCP: Tool returned 200 OK. Response body: ${JSON.stringify(result).length} bytes`
+      ].slice(-8));
+    }, 450);
+  };
+
   // Refs for scroll target
   const projectsRef = useRef<HTMLDivElement>(null);
+  const githubProjectsRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
 
   // Apply theme class to HTML root
@@ -195,6 +328,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isPlaying, activeMetric, selectedRegion, outageSimulation]);
 
+
+
   // Handle mock form submit
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,6 +418,61 @@ export default function App() {
         'Built custom admin dashboard in PHP/AngularJS with robust ledger and audit checks.'
       ],
       tech: ['PHP', 'AngularJS', 'Android', 'Java', 'MySQL', 'Firebase', 'Secure Gateways']
+    }
+  ];
+
+  // GitHub Personal Projects list
+  const githubProjects: GithubProject[] = [
+    {
+      name: 'Camera-DB-MCP',
+      description: 'An MCP (Model Context Protocol) server that provides AI assistants with access to a comprehensive CCTV camera database. Includes 10,000 sample cameras with rich metadata, search capabilities, filtering by manufacturer/type/location, and statistical analysis tools.',
+      tech: ['Node.js', 'JavaScript', 'MCP', 'JSON Schema'],
+      stars: 0,
+      forks: 0,
+      url: 'https://github.com/harshakrishnak/Camera-DB-MCP',
+      hasDemo: true,
+      demoType: 'modal-mcp'
+    },
+    {
+      name: 'sentiment-analizer',
+      description: 'Full-stack sentiment analysis web application built with React, FastAPI, and VADER. Analyzes text input or logs and outputs compound, positive, negative, and neutral metrics dynamically.',
+      tech: ['React', 'FastAPI', 'Python', 'TypeScript', 'VADER'],
+      stars: 0,
+      forks: 0,
+      url: 'https://github.com/harshakrishnak/sentiment-analizer',
+      hasDemo: true,
+      demoType: 'modal-sentiment'
+    },
+    {
+      name: 'My-Portfolio-website',
+      description: 'The source repository of this responsive, high-observability systems engineering developer portfolio. Built using React 19, TypeScript, Tailwind CSS v4, custom theme engines, and simulated live telemetry dashboards.',
+      tech: ['React 19', 'TypeScript', 'Tailwind v4', 'Vite'],
+      stars: 0,
+      forks: 0,
+      url: 'https://github.com/harshakrishnak/My-Portfolio-website',
+      hasDemo: true,
+      demoType: 'scroll',
+      demoUrl: '#dashboard'
+    },
+    {
+      name: 'users-node-server',
+      description: 'A clean Node.js and Express backend API server template for user directory management, database lookup operations, and endpoint routing protocols.',
+      tech: ['Node.js', 'Express', 'JavaScript', 'REST API'],
+      stars: 0,
+      forks: 0,
+      url: 'https://github.com/harshakrishnak/users-node-server',
+      hasDemo: false,
+      demoType: 'external'
+    },
+    {
+      name: 'users-frontend',
+      description: 'A responsive React and TypeScript frontend application providing interactive user directory dashboards, form submission validations, and live list updates.',
+      tech: ['React', 'TypeScript', 'Vite', 'CSS'],
+      stars: 0,
+      forks: 0,
+      url: 'https://github.com/harshakrishnak/users-frontend',
+      hasDemo: false,
+      demoType: 'external'
     }
   ];
 
@@ -412,7 +602,8 @@ export default function App() {
             <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors cursor-pointer">About</button>
             <a href="#dashboard" className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors">Telemetry</a>
             <a href="#architecture" className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors">Architecture</a>
-            <button onClick={() => scrollIntoView(projectsRef)} className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors cursor-pointer">Projects</button>
+            <button onClick={() => scrollIntoView(projectsRef)} className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors cursor-pointer">B2B Products</button>
+            <button onClick={() => scrollIntoView(githubProjectsRef)} className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors cursor-pointer">Open Source</button>
             <a href="#experience" className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors">Experience</a>
             <button onClick={() => scrollIntoView(contactRef)} className="text-text-theme-secondary hover:text-accent-theme-primary transition-colors cursor-pointer">Contact</button>
           </nav>
@@ -510,9 +701,10 @@ export default function App() {
               <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setMobileMenuOpen(false); }} className="text-left py-2 text-text-theme-secondary hover:text-accent-theme-primary">About</button>
               <a href="#dashboard" onClick={() => setMobileMenuOpen(false)} className="py-2 text-text-theme-secondary hover:text-accent-theme-primary">VMS Telemetry</a>
               <a href="#architecture" onClick={() => setMobileMenuOpen(false)} className="py-2 text-text-theme-secondary hover:text-accent-theme-primary">Pipeline Architecture</a>
-              <button onClick={() => scrollIntoView(projectsRef)} className="text-left py-2 text-text-theme-secondary hover:text-accent-theme-primary">Featured Work</button>
+              <button onClick={() => { scrollIntoView(projectsRef); setMobileMenuOpen(false); }} className="text-left py-2 text-text-theme-secondary hover:text-accent-theme-primary">B2B Products</button>
+              <button onClick={() => { scrollIntoView(githubProjectsRef); setMobileMenuOpen(false); }} className="text-left py-2 text-text-theme-secondary hover:text-accent-theme-primary">Open Source</button>
               <a href="#experience" onClick={() => setMobileMenuOpen(false)} className="py-2 text-text-theme-secondary hover:text-accent-theme-primary">Experience History</a>
-              <button onClick={() => scrollIntoView(contactRef)} className="text-left py-2 text-text-theme-secondary hover:text-accent-theme-primary">Contact & Calendly</button>
+              <button onClick={() => { scrollIntoView(contactRef); setMobileMenuOpen(false); }} className="text-left py-2 text-text-theme-secondary hover:text-accent-theme-primary">Contact & Calendly</button>
             </nav>
             <div className="flex space-x-2 pt-2">
               <a href="https://www.linkedin.com/in/harsha-krishna-k-55981b89" target="_blank" rel="noopener noreferrer" className="flex-1 py-2 rounded-lg border border-border-theme flex items-center justify-center text-xs text-text-theme-secondary">
@@ -1410,6 +1602,113 @@ export default function App() {
           </div>
         </section>
 
+        {/* GitHub Personal Projects Section */}
+        <section ref={githubProjectsRef} id="github-projects" className="scroll-mt-20">
+          <div className="text-center space-y-3 mb-10">
+            <h2 className="font-display text-3xl font-bold tracking-tight text-text-theme-primary">Open Source & Personal GitHub Projects</h2>
+            <p className="text-text-theme-secondary max-w-2xl mx-auto text-sm sm:text-base">
+              A collection of high-performance developer tools, VMS integration utilities, and microservice frameworks.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {githubProjects.map((project, idx) => (
+              <div key={idx} className="glass-panel p-6 rounded-2xl flex flex-col justify-between gap-6 hover:shadow-xl hover:translate-y-[-2px] transition-all relative overflow-hidden">
+                <div className="space-y-4">
+                  {/* Card Header */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-2 rounded-lg bg-bg-secondary border border-border-theme text-accent-theme-primary font-mono text-sm">
+                        &lt;/&gt;
+                      </div>
+                      <h3 className="font-display text-base sm:text-lg font-bold text-text-theme-primary tracking-tight">
+                        {project.name}
+                      </h3>
+                    </div>
+
+                    {/* Pulse status badge */}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wide border ${
+                      project.demoType === 'external'
+                        ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                        : project.demoType === 'scroll'
+                        ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                        : 'bg-green-500/10 border-green-500/20 text-green-400'
+                    }`}>
+                      <span className={`w-1 h-1 rounded-full mr-1.5 ${
+                        project.demoType === 'external' ? 'bg-blue-400' : project.demoType === 'scroll' ? 'bg-yellow-400 animate-pulse' : 'bg-green-500 animate-ping'
+                      }`} />
+                      {project.demoType === 'external' ? 'CODE ONLY' : project.demoType === 'scroll' ? 'DASHBOARD DEMO' : 'LIVE SIMULATOR'}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-xs sm:text-sm text-text-theme-secondary leading-relaxed">
+                    {project.description}
+                  </p>
+
+                  {/* Github statistics row */}
+                  <div className="flex items-center space-x-4 text-[10px] font-mono text-text-theme-muted">
+                    <span className="flex items-center">
+                      <svg className="w-3.5 h-3.5 mr-1 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      {project.stars} Stars
+                    </span>
+                    <span className="flex items-center">
+                      <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M18 15V9a4 4 0 0 0-4-4h-4M6 9v9"/></svg>
+                      {project.forks} Forks
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card footer / Actions */}
+                <div className="flex items-center justify-between pt-2 border-t border-border-theme/40 gap-3">
+                  {/* Tech stack tags */}
+                  <div className="flex flex-wrap gap-1">
+                    {project.tech.map((t, tIdx) => (
+                      <span key={tIdx} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-bg-secondary border border-border-theme/60 text-text-theme-primary">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 border border-border-theme hover:border-border-theme-hover bg-bg-secondary/40 rounded-lg text-text-theme-secondary hover:text-text-theme-primary transition-all"
+                      title="View Repository"
+                    >
+                      <GitHubIcon className="w-3.5 h-3.5" />
+                    </a>
+
+                    {project.hasDemo && (
+                      <button
+                        onClick={() => {
+                          if (project.demoType === 'modal-mcp') {
+                            setActiveGithubDemo('mcp');
+                          } else if (project.demoType === 'modal-sentiment') {
+                            setActiveGithubDemo('sentiment');
+                          } else if (project.demoType === 'scroll') {
+                            const dash = document.getElementById('dashboard');
+                            dash?.scrollIntoView({ behavior: 'smooth' });
+                          } else {
+                            window.open(project.url, '_blank');
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-accent-theme-primary/10 border border-accent-theme-primary/30 hover:bg-accent-theme-primary hover:text-bg-primary text-accent-theme-primary rounded-lg text-xs font-mono font-bold transition-all cursor-pointer text-glow"
+                      >
+                        Launch Demo
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Section E: Work Experience Timeline */}
         <section id="experience" className="scroll-mt-20">
           <div className="text-center space-y-3 mb-10">
@@ -1746,6 +2045,258 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* GitHub Demo Modals */}
+      {activeGithubDemo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg-primary/80 backdrop-blur-md animate-fade-in">
+          
+          <div className="glass-panel w-full max-w-2xl rounded-2xl border border-border-theme bg-bg-card p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between max-h-[85vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-border-theme mb-4">
+              <div className="flex items-center space-x-2 font-mono">
+                <Terminal className="w-5 h-5 text-accent-theme-primary" />
+                <span className="font-bold text-text-theme-primary text-sm sm:text-base">
+                  {activeGithubDemo === 'mcp' ? 'Camera-DB-MCP // Model Context Protocol Client' : 'sentiment-analizer // VADER NLP Simulator'}
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  setActiveGithubDemo(null);
+                }}
+                className="p-1 rounded-lg border border-border-theme hover:bg-bg-secondary text-text-theme-secondary hover:text-text-theme-primary transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: MCP Camera Database Demo */}
+            {activeGithubDemo === 'mcp' && (
+              <div className="flex-grow space-y-4 font-mono overflow-y-auto no-scrollbar animate-fade-in">
+                <p className="text-xs text-text-theme-secondary leading-relaxed font-sans font-medium">
+                  This simulator runs an MCP tool-execution loop. Query a collection of 10,000 CCTV cameras with full metadata indexing by triggering standard MCP client actions below.
+                </p>
+
+                {/* Console CLI Screen */}
+                <div className="bg-bg-primary border border-border-theme rounded-xl p-4 min-h-48 text-[10px] text-text-theme-secondary leading-relaxed overflow-hidden flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center text-accent-theme-primary border-b border-border-theme/40 pb-2 mb-2 text-[9px] uppercase tracking-wider">
+                      <span>Server status: active [stdio transport]</span>
+                      <span className="flex items-center">
+                        <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-ping" />
+                        mcp_port_3010
+                      </span>
+                    </div>
+                    <div className="space-y-1 select-all font-mono">
+                      {simMcpLogs.map((log, idx) => (
+                        <div key={idx} className="flex items-start">
+                          <span className="text-accent-theme-primary mr-1.5">&gt;</span>
+                          <span>{log}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* JSON Output Display */}
+                  <div className="mt-4 pt-3 border-t border-border-theme/30 bg-bg-secondary/40 p-3 rounded-lg max-h-40 overflow-y-auto no-scrollbar font-mono text-[9px] text-text-theme-primary whitespace-pre-wrap">
+                    {simMcpLoading ? (
+                      <div className="flex items-center space-x-2 text-accent-theme-primary animate-pulse">
+                        <span className="w-2.5 h-2.5 border-2 border-accent-theme-primary border-t-transparent rounded-full animate-spin" />
+                        <span>Querying SQLite Database indices...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-[8px] text-text-theme-muted mb-1 font-mono uppercase tracking-wider">Query Result:</div>
+                        {simMcpResult}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* MCP Tool query controls */}
+                <div className="pt-2 text-xs">
+                  <label className="text-[10px] text-text-theme-muted uppercase tracking-wide block mb-2">Execute Database Tool Calls</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => runMcpQuery('get_camera_stats')}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                        simMcpQuery === 'get_camera_stats' 
+                          ? 'border-accent-theme-primary bg-accent-theme-primary/10 text-accent-theme-primary' 
+                          : 'border-border-theme hover:bg-bg-secondary text-text-theme-secondary hover:text-text-theme-primary'
+                      }`}
+                    >
+                      get_camera_stats()
+                    </button>
+                    <button 
+                      onClick={() => runMcpQuery('list_cameras')}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                        simMcpQuery === 'list_cameras' 
+                          ? 'border-accent-theme-primary bg-accent-theme-primary/10 text-accent-theme-primary' 
+                          : 'border-border-theme hover:bg-bg-secondary text-text-theme-secondary hover:text-text-theme-primary'
+                      }`}
+                    >
+                      list_cameras(&#123; location: 'Building A' &#125;)
+                    </button>
+                    <button 
+                      onClick={() => runMcpQuery('search_cameras')}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                        simMcpQuery === 'search_cameras' 
+                          ? 'border-accent-theme-primary bg-accent-theme-primary/10 text-accent-theme-primary' 
+                          : 'border-border-theme hover:bg-bg-secondary text-text-theme-secondary hover:text-text-theme-primary'
+                      }`}
+                    >
+                      search_cameras(&#123; query: 'PTZ' &#125;)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Body: VADER Sentiment Analysis Demo */}
+            {activeGithubDemo === 'sentiment' && (
+              <div className="flex-grow space-y-4 font-mono overflow-y-auto no-scrollbar animate-fade-in">
+                <p className="text-xs text-text-theme-secondary leading-relaxed font-sans font-medium">
+                  This interactive demo simulates the VADER Python rules-based Lexicon Engine. Write custom system messages, reviews, or logs, and see the compound polarity metrics.
+                </p>
+
+                {/* Input Text Box */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-text-theme-muted uppercase tracking-wide">Telemetry Log / Comment Input</label>
+                  <textarea 
+                    value={simSentimentInput}
+                    onChange={e => {
+                      setSimSentimentInput(e.target.value);
+                      const res = analyzeSentimentLocal(e.target.value);
+                      setSimSentimentResult(res);
+                    }}
+                    rows={2}
+                    className="w-full bg-bg-primary border border-border-theme rounded-xl p-3 font-mono text-xs text-text-theme-primary focus:outline-none focus:border-accent-theme-primary transition-all resize-none"
+                    placeholder="Enter text to analyze sentiment..."
+                  />
+                </div>
+
+                {/* Interactive Preset Buttons */}
+                <div className="space-y-1">
+                  <label className="text-[9px] text-text-theme-muted uppercase tracking-wide block mb-1">Preset Logs</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { text: 'System recovered successfully. Stream feeds stabilized at 30 FPS.', label: 'Positive' },
+                      { text: 'CRITICAL WARNING! High packet loss detected on edge nodes. Connection timed out.', label: 'Negative' },
+                      { text: 'Checking camera 08 logs. System configuration remains unchanged.', label: 'Neutral' }
+                    ].map((preset, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSimSentimentInput(preset.text);
+                          const res = analyzeSentimentLocal(preset.text);
+                          setSimSentimentResult(res);
+                        }}
+                        className="text-[9px] font-mono px-2.5 py-1 rounded bg-bg-secondary border border-border-theme/80 text-text-theme-secondary hover:text-text-theme-primary hover:border-border-theme-hover cursor-pointer transition-colors"
+                      >
+                        {preset.label} Preset
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sentiment Analysis Telemetry Result */}
+                <div className="bg-bg-primary border border-border-theme rounded-xl p-4 space-y-4">
+                  {/* Compound Score Meter */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[10px] text-text-theme-muted uppercase tracking-wide">VADER Compound Score</span>
+                      <span className={`font-bold ${
+                        simSentimentResult.compound > 0.1 
+                          ? 'text-green-400' 
+                          : simSentimentResult.compound < -0.1 
+                          ? 'text-red-400' 
+                          : 'text-text-theme-secondary'
+                      }`}>
+                        {simSentimentResult.compound > 0 ? '+' : ''}{simSentimentResult.compound.toFixed(2)}
+                      </span>
+                    </div>
+                    {/* Compound Slide Bar */}
+                    <div className="relative h-2.5 bg-bg-secondary rounded-full overflow-hidden border border-border-theme/40">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          simSentimentResult.compound > 0.1 
+                            ? 'bg-green-500' 
+                            : simSentimentResult.compound < -0.1 
+                            ? 'bg-red-500' 
+                            : 'bg-gray-400'
+                        }`}
+                        style={{
+                          width: `${((simSentimentResult.compound + 1) / 2) * 100}%`
+                        }}
+                      />
+                      {/* Center indicator */}
+                      <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-border-theme" />
+                    </div>
+                    <div className="flex justify-between text-[8px] text-text-theme-muted font-mono">
+                      <span>-1.00 (Extremely Negative)</span>
+                      <span>0.00 (Neutral)</span>
+                      <span>+1.00 (Extremely Positive)</span>
+                    </div>
+                  </div>
+
+                  {/* Positive, Neutral, Negative Breakdowns */}
+                  <div className="grid grid-cols-3 gap-3 pt-1 text-xs">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[9px] text-text-theme-muted font-mono">
+                        <span>POSITIVE</span>
+                        <span>{simSentimentResult.pos}%</span>
+                      </div>
+                      <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-green-400 transition-all duration-300" style={{ width: `${simSentimentResult.pos}%` }} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[9px] text-text-theme-muted font-mono">
+                        <span>NEUTRAL</span>
+                        <span>{simSentimentResult.neu}%</span>
+                      </div>
+                      <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-gray-400 transition-all duration-300" style={{ width: `${simSentimentResult.neu}%` }} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[9px] text-text-theme-muted font-mono">
+                        <span>NEGATIVE</span>
+                        <span>{simSentimentResult.neg}%</span>
+                      </div>
+                      <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-red-400 transition-all duration-300" style={{ width: `${simSentimentResult.neg}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="mt-6 pt-3 border-t border-border-theme flex justify-end gap-2 text-xs">
+              <a 
+                href={githubProjects.find(p => p.demoType === (activeGithubDemo === 'mcp' ? 'modal-mcp' : 'modal-sentiment'))?.url || "https://github.com/harshakrishnak"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 border border-border-theme hover:border-border-theme-hover bg-bg-secondary/40 rounded-lg text-text-theme-secondary hover:text-text-theme-primary transition-all flex items-center"
+              >
+                <GitHubIcon className="w-3.5 h-3.5 mr-1.5" />
+                <span>Browse Repository</span>
+              </a>
+              <button 
+                onClick={() => {
+                  setActiveGithubDemo(null);
+                }}
+                className="px-4 py-2 bg-accent-theme-primary hover:bg-accent-theme-primary/95 text-bg-primary font-bold rounded-lg transition-all cursor-pointer"
+              >
+                Close Simulator
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
