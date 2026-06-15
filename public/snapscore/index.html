@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapScore — Private Photo & Art Intelligence</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Nomination showcase for SnapScore: a private, on-device photo and artwork evaluator that helps people choose, improve, and share better visuals.">
+  <meta name="keywords" content="SnapScore, photo evaluator, art score, offline AI, computer vision, social media crop helper, OpenCV Flutter">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    const isSafari = /^Apple/.test(navigator.vendor || '') && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
+    document.documentElement.classList.toggle('is-safari', isSafari);
+  </script>
+  
+  <!-- Link stylesheet -->
+  <link rel="icon" href="web_assets/app_icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-purple"></div>
+  <div class="ambient-glow glow-cyan"></div>
+  <div class="ambient-glow glow-bottom"></div>
+
+  <!-- Header Navigation -->
+  <header>
+    <div class="nav-container">
+      <a href="#top" class="logo-wrap">
+        <img src="web_assets/app_icon.png" alt="SnapScore Icon" class="logo-icon">
+        <span class="logo-text">Snap<span>Score</span></span>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features">Value</a></li>
+        <li><a href="#use-cases">Use Cases</a></li>
+        <li><a href="#screenshots">App Tour</a></li>
+        <li><a href="#social-fit">Social Fit</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+      </ul>
+      <button class="mobile-nav-toggle" id="mobile-toggle" aria-label="Toggle Navigation">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <a href="https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678" target="_blank" class="btn btn-nomination">Download App</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <!-- Animated Hero Background -->
+    <div class="hero-bg-animation">
+      <div class="grid-overlay"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+    </div>
+    
+    <div class="nomination-tag">Total Privacy • On-Device Computer Vision</div>
+    <h1><span>Which photo is the best?</span> <br><span class="gradient-text">Compare & rate them instantly.</span></h1>
+    <p class="hero-subtitle">Torn between similar selfies, or checking if a document scan is clear? SnapScore uses local AI to rank your photos, score your drawings, and preview social profile crops—straight from your native Photos share sheet.</p>
+
+    <!-- Interactive Share Sheet Simulator Phone -->
+    <div class="hero-phone-container" aria-label="SnapScore share sheet comparison preview">
+      <div class="hero-phone-mockup state-photos" id="phone-simulator">
+        <div class="phone-inner">
+          <div class="phone-notch"></div>
+          <div class="finger-pointer" id="finger-pointer"></div>
+
+          <!-- Screen 1: Photos Gallery App Grid -->
+          <div class="screen screen-gallery">
+            <div class="gallery-header">
+              <span class="back-arrow">＜</span>
+              <span class="album-title">Trip Photos</span>
+              <span class="action-btn">Select</span>
+            </div>
+            <div class="gallery-scroll-container">
+              <div class="gallery-grid">
+                <div class="gallery-photo photo-1"></div>
+                <div class="gallery-photo photo-2"><div class="checkbox">✓</div></div>
+                <div class="gallery-photo photo-3"><div class="checkbox">✓</div></div>
+                <div class="gallery-photo photo-4"></div>
+                <div class="gallery-photo photo-5"><div class="checkbox">✓</div></div>
+                <div class="gallery-photo photo-6"></div>
+                <div class="gallery-photo photo-7"></div>
+                <div class="gallery-photo photo-8"></div>
+                <div class="gallery-photo photo-9"></div>
+                <div class="gallery-photo photo-10"></div>
+                <div class="gallery-photo photo-11"></div>
+                <div class="gallery-photo photo-12"></div>
+              </div>
+            </div>
+            <div class="gallery-footer">
+              <div class="footer-btn share-trigger">📤</div>
+              <div class="footer-btn">❤️</div>
+              <div class="footer-btn">🗑️</div>
+            </div>
+          </div>
+
+          <!-- Screen 2: iOS Share Sheet Panel -->
+          <div class="screen screen-share-sheet">
+            <div class="share-sheet-backdrop"></div>
+            <div class="share-sheet-panel">
+              <div class="share-sheet-drag-handle"></div>
+              <div class="share-sheet-selected-row">
+                <div class="selected-thumbnails">
+                  <div class="thumb thumb-1"></div>
+                  <div class="thumb thumb-2"></div>
+                  <div class="thumb thumb-3"></div>
+                </div>
+                <div class="selected-text">3 Photos Selected</div>
+              </div>
+              <div class="share-actions-list">
+                <div class="share-action-item">Copy Photo</div>
+                <div class="share-action-item">Add to Shared Album</div>
+                <!-- Glowing SnapScore trigger item -->
+                <div class="share-action-item snapscore-action" id="share-action-trigger">
+                  <img src="web_assets/app_icon.png" alt="SnapScore App Icon" class="action-icon">
+                  <span class="action-label">SnapScore - Which is Best?</span>
+                  <span class="action-badge">AI</span>
+                </div>
+                <div class="share-action-item">Save to Files</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Screen 3: SnapScore App Comparison Results overlay -->
+          <div class="screen screen-snapscore-results">
+            <div class="results-app-header">
+              <span class="results-back">✕</span>
+              <span class="results-title">Comparison Results</span>
+              <span class="results-settings">⚙</span>
+            </div>
+            <div class="results-winner-banner">
+              <img src="web_assets/grid_photo_winner.jpg" alt="Winner Photo" class="results-winner-img">
+              <div class="results-winner-badge">🏆 WINNER 9.6/10</div>
+            </div>
+            <div class="results-runners-up">
+              <div class="runner-thumbnail runner-1">
+                <div class="runner-score">7.4</div>
+              </div>
+              <div class="runner-thumbnail runner-2">
+                <div class="runner-score">6.8</div>
+              </div>
+            </div>
+            <div class="results-action-buttons">
+              <button class="results-btn share-winner-btn">Share Winner</button>
+              <button class="results-btn delete-others-btn">🗑️ Delete Others</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678" target="_blank" class="app-store-badge-link">
+        <img src="web_assets/download_app_store.svg" alt="Download on the App Store" class="app-store-badge">
+      </a>
+      <a href="#screenshots" class="btn btn-secondary">Explore the App Tour</a>
+    </div>
+
+    <!-- Quick Stats Summary -->
+    <div class="quick-stats">
+      <div class="stat-item">
+        <h3>Private</h3>
+        <p>Photos stay on device</p>
+      </div>
+      <div class="stat-item">
+        <h3>Useful</h3>
+        <p>Scores become next steps</p>
+      </div>
+      <div class="stat-item">
+        <h3>Visual</h3>
+        <p>Mockups show real context</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="editor-brief scroll-reveal" aria-label="App Store editor summary">
+    <div class="brief-copy">
+      <span class="section-kicker">For App Store Editors</span>
+      <h2>A practical AI utility with an immediately understandable promise.</h2>
+      <p>SnapScore turns the common anxiety of “which photo should I use?” into a fast, visual, private decision. It supports artists, students, professionals, and everyday creators with scores, comparisons, diagnosis, and platform previews that are easy to understand at a glance.</p>
+    </div>
+    <div class="brief-points">
+      <div>
+        <strong>Clear user benefit</strong>
+        <span>Pick stronger photos, delete weaker duplicates, and understand exactly what to improve.</span>
+      </div>
+      <div>
+        <strong>Privacy-first AI</strong>
+        <span>Designed around on-device analysis, ideal for sensitive portraits, artwork, and personal memories.</span>
+      </div>
+      <div>
+        <strong>Delightful presentation</strong>
+        <span>Dark, high-contrast UI with tactile scoring, winner badges, and social mockups.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Features Section -->
+  <section id="features" class="scroll-reveal">
+    <div class="section-header">
+      <h2>Built Around Real Decisions</h2>
+      <p>SnapScore is not just a score screen. It explains visual quality, compares similar shots, and previews where each image will actually be used.</p>
+    </div>
+    
+    <div class="features-grid">
+      <!-- Feature Card 1 -->
+      <div class="glass-card">
+        <div class="feature-icon-wrap">🎨</div>
+        <h3 class="feature-title">Artwork Feedback</h3>
+        <p class="feature-description">Grades line clarity, contrast, balance, and capture quality so artists can photograph sketches and paintings with more confidence.</p>
+      </div>
+      
+      <!-- Feature Card 2 -->
+      <div class="glass-card">
+        <div class="feature-icon-wrap">👤</div>
+        <h3 class="feature-title">Social Fit Preview</h3>
+        <p class="feature-description">Shows how portraits and memories look inside LinkedIn, Slack, WhatsApp, Instagram, Facebook, covers, and story-style layouts.</p>
+      </div>
+      
+      <!-- Feature Card 3 -->
+      <div class="glass-card">
+        <div class="feature-icon-wrap">🏆</div>
+        <h3 class="feature-title">Winner Selection</h3>
+        <p class="feature-description">Compares similar images, highlights the best option, and gives practical diagnosis instead of leaving users to guess from a gallery grid.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Real-World Scenarios / Use Cases Section -->
+  <section id="use-cases" class="scroll-reveal">
+    <div class="section-header">
+      <h2>Solving Real-World Problems</h2>
+      <p>How SnapScore turns complex on-device computer vision into simple daily workflows for students, artists, and creators.</p>
+    </div>
+
+    <div class="use-cases-grid">
+      <!-- Use Case 1: Student Notebook Scanner -->
+      <div class="glass-card use-case-card">
+        <div class="use-case-content">
+          <span class="use-case-badge badge-productivity">Productivity Helper</span>
+          <h3>Notebook Scans & Document Clarity</h3>
+          <p class="scenario-text"><strong>Scenario:</strong> You're a student capturing chalkboard notes or handwritten textbook formulas. Are they clear enough for studying later?</p>
+          <p class="feature-bullets">
+            <span>🔍 <strong>Text Readability:</strong> Analyzes edge clarity and OCR legibility of text characters.</span>
+            <span>🚨 <strong>Highlight Unreadable:</strong> Flags blurry, out-of-focus, or skewed document sections.</span>
+            <span>🗑️ <strong>Delete Bad Photos:</strong> Instantly wipe low-scoring temp images to save mobile space.</span>
+          </p>
+        </div>
+        <div class="use-case-visual">
+          <div class="notebook-anim-container">
+            <div class="notebook-page">
+              <div class="notebook-line clear-line">
+                <span class="text-content">Math: f(x) = ∫(3x² + 2x) dx</span>
+                <span class="status-indicator pass-indicator">✓ Readable</span>
+              </div>
+              <div class="notebook-line blurry-line">
+                <span class="text-content">f(x) = x³ + x² + C</span>
+                <span class="status-indicator fail-indicator">⚠️ Blurry</span>
+              </div>
+              <div class="notebook-line clear-line">
+                <span class="text-content">Physics Formula: E = mc²</span>
+                <span class="status-indicator pass-indicator">✓ Readable</span>
+              </div>
+            </div>
+            <div class="scanner-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Use Case 2: Artist Artwork Scorer -->
+      <div class="glass-card use-case-card">
+        <div class="use-case-content">
+          <span class="use-case-badge badge-creative">Creative Feedback</span>
+          <h3>Artwork Scorer & Composition Critic</h3>
+          <p class="scenario-text"><strong>Scenario:</strong> You're an artist capturing physical charcoal sketches, watercolor paintings, or cartoons. Is the photo high-quality?</p>
+          <p class="feature-bullets">
+            <span>✏️ <strong>Line & Stroke Clarity:</strong> Checks edge gradients using Laplacian filters.</span>
+            <span>🌓 <strong>Value & Contrast Range:</strong> Evaluates shading depth and highlight definition.</span>
+            <span>⚖️ <strong>Symmetry & Balance:</strong> Scans regional density of stroke structures between left/right halves.</span>
+          </p>
+        </div>
+        <div class="use-case-visual">
+          <div class="canvas-anim-container">
+            <div class="sketch-canvas">
+              <div class="grid-guides"></div>
+              <div class="sketch-lines"></div>
+              <div class="balance-marker left-balance">L: 50%</div>
+              <div class="balance-marker right-balance">R: 50%</div>
+              <div class="score-overlay-badge">🎨 Art Score: 9.1</div>
+            </div>
+            <div class="scanning-reticle"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Use Case 3: Travel Photo Picker -->
+      <div class="glass-card use-case-card">
+        <div class="use-case-content">
+          <span class="use-case-badge badge-social">Social Fit</span>
+          <h3>Trip Photo Picker & Grid Curator</h3>
+          <p class="scenario-text"><strong>Scenario:</strong> Back from a trip with 15 similar selfies and can't choose which one to post on social media?</p>
+          <p class="feature-bullets">
+            <span>🏆 <strong>Which is Best:</strong> Compares up to 30 photos side-by-side and designates a winner.</span>
+            <span>👤 <strong>Social Suitability:</strong> Checks facial rotation, smile indicators, and lighting.</span>
+            <span>📱 <strong>Share Sheet integration:</strong> Launch comparisons directly from your mobile gallery.</span>
+          </p>
+        </div>
+        <div class="use-case-visual">
+          <div class="picker-anim-container">
+            <div class="photo-thumbnail photo-left">
+              <div class="rating-badge">7.4</div>
+            </div>
+            <div class="photo-thumbnail photo-winner">
+              <div class="rating-badge winner-badge">🏆 9.5</div>
+              <div class="winner-label">Best Fit</div>
+            </div>
+            <div class="photo-thumbnail photo-right">
+              <div class="rating-badge">6.8</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Use Case 4: Camera & Lens Comparer -->
+      <div class="glass-card use-case-card">
+        <div class="use-case-content">
+          <span class="use-case-badge badge-hardware">Hardware Compare</span>
+          <h3>Camera & Lens Quality Evaluator</h3>
+          <p class="scenario-text"><strong>Scenario:</strong> Want to compare detail capture between an iPhone vs. Samsung, or different lens filters?</p>
+          <p class="feature-bullets">
+            <span>📱 <strong>Camera Benchmarks:</strong> Computes objective, mathematical clarity and contrast stats.</span>
+            <span>🔍 <strong>Micro-detail comparison:</strong> Runs edge definition variances to see pixel-level definitions.</span>
+            <span>⚖️ <strong>Fair Comparison:</strong> Renders scoring meters for lighting, focus, and noise profiles.</span>
+          </p>
+        </div>
+        <div class="use-case-visual">
+          <div class="camera-compare-container">
+            <div class="compare-pane pane-a">
+              <span class="pane-label">iPhone (Sharpness: 8.8)</span>
+            </div>
+            <div class="compare-pane pane-b">
+              <span class="pane-label">Pixel (Sharpness: 7.2)</span>
+            </div>
+            <div class="compare-slider-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Score Simulator Widget -->
+  <section id="demo" class="scroll-reveal">
+    <div class="section-header">
+      <h2>Interactive Score Simulator</h2>
+      <p>Simulate SnapScore's on-device analysis pipeline. Select a preset image below to check its scores, classification, and real-time AI suggestions.</p>
+    </div>
+
+    <div class="glass-card">
+      <div class="simulator-layout">
+        <!-- Left Side: Preset selection list -->
+        <div class="preset-selector">
+          <!-- Preset 1 -->
+          <div class="preset-card active" onclick="selectPreset('sketch')">
+            <img src="web_assets/screen_details.png" alt="Charcoal Sketch" class="preset-img">
+            <div class="preset-info">
+              <h4>Charcoal Sketch</h4>
+              <p>Monochrome edge illustration</p>
+            </div>
+          </div>
+          
+          <!-- Preset 2 -->
+          <div class="preset-card" onclick="selectPreset('blurry')">
+            <img src="web_assets/screen_upload.png" alt="Out of Focus" class="preset-img">
+            <div class="preset-info">
+              <h4>Low-Light Photo</h4>
+              <p>Blurry lighting & skewed frame</p>
+            </div>
+          </div>
+          
+          <!-- Preset 3 -->
+          <div class="preset-card" onclick="selectPreset('portrait')">
+            <img src="web_assets/screen_results.png" alt="Sleek Portrait" class="preset-img">
+            <div class="preset-info">
+              <h4>Clean Portrait</h4>
+              <p>Centered headshot with smile</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Scoring results visualization -->
+        <div class="scoring-panel">
+          <div class="simulator-result-panel">
+            <!-- Center Ring Score -->
+            <div class="scoring-summary-card">
+              <div class="class-badge" id="sim-badge">Art Work (Sketch)</div>
+              <div class="circle-score-container">
+                <svg>
+                  <defs>
+                    <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="var(--primary)" />
+                      <stop offset="100%" stop-color="var(--secondary)" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="circle-bg" cx="80" cy="80" r="75"></circle>
+                  <circle class="circle-progress" id="sim-progress-circle" cx="80" cy="80" r="75"></circle>
+                </svg>
+                <div class="score-display-text">
+                  <div class="score-num" id="sim-score-text">8.4</div>
+                  <div class="score-lbl">Score</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Individual parameters meters -->
+            <div class="scoring-details-panel">
+              <div class="metric-bar-wrap">
+                <h5><span id="metric-1-name">Line Clarity</span> <span id="metric-1-val">8.8 / 10</span></h5>
+                <div class="metric-bar-outer">
+                  <div class="metric-bar-inner" id="metric-1-bar"></div>
+                </div>
+              </div>
+
+              <div class="metric-bar-wrap">
+                <h5><span id="metric-2-name">Contrast / Shading</span> <span id="metric-2-val">8.0 / 10</span></h5>
+                <div class="metric-bar-outer">
+                  <div class="metric-bar-inner" id="metric-2-bar"></div>
+                </div>
+              </div>
+
+              <div class="metric-bar-wrap">
+                <h5><span id="metric-3-name">Composition Balance</span> <span id="metric-3-val">8.5 / 10</span></h5>
+                <div class="metric-bar-outer">
+                  <div class="metric-bar-inner" id="metric-3-bar"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom: AI suggestion panel -->
+            <div class="ai-suggestion-box">
+              <h6>🤖 On-Device AI Feedback</h6>
+              <p id="sim-ai-feedback">Excellent stroke definition! Shading contrast is good. Center framing is well balanced. Lay the capture sheet completely flat next time to avoid slight perspective warping.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Social Mockup Previews -->
+  <section id="social-fit" class="scroll-reveal">
+    <div class="section-header">
+      <h2>Interactive Social Crop Previews</h2>
+      <p>SnapScore previews crop regions, overlap blocks, and readability constraints in simulated platform components. Click a platform below to test the mockup view.</p>
+    </div>
+
+    <div class="social-preview-wrapper">
+      <!-- Left side: Platform Card Clickers -->
+      <div class="social-selector-cards">
+        <div class="social-selector-item active" onclick="selectSocial('linkedin')">
+          <h4>LinkedIn Profile</h4>
+          <p>Checks circular crops and details overlaps.</p>
+        </div>
+        <div class="social-selector-item" onclick="selectSocial('instagram')">
+          <h4>Instagram Post</h4>
+          <p>Standard square grid layout feed details.</p>
+        </div>
+        <div class="social-selector-item" onclick="selectSocial('slack')">
+          <h4>Slack Avatar</h4>
+          <p>Checks readability at tiny 40x40 scale.</p>
+        </div>
+        <div class="social-selector-item" onclick="selectSocial('cover')">
+          <h4>Widescreen Cover</h4>
+          <p>Shows horizontal banner safe crop margins.</p>
+        </div>
+      </div>
+
+      <!-- Right side: Render Mockup Frame -->
+      <div class="mockup-display-container">
+        <!-- LinkedIn Mockup -->
+        <div id="mock-linkedin" class="mockup-wrapper linkedin-mock">
+          <div class="linkedin-banner"></div>
+          <div class="linkedin-header">
+            <div class="linkedin-avatar-container">
+              <img src="web_assets/screen_results.png" alt="Headshot" class="linkedin-avatar">
+            </div>
+            <div class="linkedin-details">
+              <h4>Alex Morgan</h4>
+              <p class="headline">Product Designer & Developer</p>
+              <p class="location">San Francisco Bay Area</p>
+              <span class="linkedin-btn">Open to Work</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instagram Mockup -->
+        <div id="mock-instagram" class="mockup-wrapper instagram-mock" style="display: none;">
+          <div class="instagram-header">
+            <img src="web_assets/screen_results.png" alt="Profile" class="instagram-avatar">
+            <h5>alex_designs</h5>
+          </div>
+          <div class="instagram-img-container">
+            <img src="web_assets/screen_results.png" alt="Post Photo" class="instagram-img">
+          </div>
+          <div class="instagram-footer">
+            <div class="instagram-actions">❤️ 💬 📤</div>
+            <p><span class="bold">alex_designs</span> Exploring composition layouts on SnapScore. Rates high in framing! #design #uiux</p>
+          </div>
+        </div>
+
+        <!-- Slack Mockup -->
+        <div id="mock-slack" class="mockup-wrapper slack-mock" style="display: none;">
+          <div class="slack-header"># project-snapscore</div>
+          <div class="slack-message">
+            <img src="web_assets/screen_results.png" alt="Slack Avatar" class="slack-avatar">
+            <div class="slack-content">
+              <h5>Alex Morgan <span>10:24 AM</span></h5>
+              <p>Hi team, this is how my profile picture scales down inside the main corporate directory chat bubble. Let me know if it looks readable!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cover Photo Mockup -->
+        <div id="mock-cover" class="mockup-wrapper cover-mock" style="display: none;">
+          <div class="cover-banner-container">
+            <img src="web_assets/feature_graphic.png" alt="Banner Image" class="cover-banner-img">
+          </div>
+          <div class="cover-details">
+            <div class="cover-avatar-container">
+              <img src="web_assets/screen_results.png" alt="Overlay Profile" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+            <div class="cover-profile-details">
+              <h4>Alex Morgan</h4>
+              <p>Profile banner overlap layout verification</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots Gallery Section -->
+  <section id="screenshots" class="scroll-reveal">
+    <div class="section-header">
+      <span class="section-kicker">Swipe the product story</span>
+      <h2>Visual Tour of the App</h2>
+      <p>Real iPhone screenshots showing the complete flow: compare photos, inspect details, understand quality, and preview the same image across social destinations.</p>
+    </div>
+
+    <div class="tour-shell">
+      <div class="tour-intro">
+        <h3>From “which one?” to “this is why.”</h3>
+        <p>SnapScore pairs visual polish with utility: winner badges, score breakdowns, AI diagnosis, and contextual social mockups make the recommendation feel explainable.</p>
+      </div>
+      <div class="tour-track" aria-label="Horizontal screenshot gallery">
+        <article class="tour-card">
+          <img src="web_assets/app_tour_comparison_art_top.jpg" alt="Artwork comparison winner screen">
+          <div class="tour-caption"><strong>Artwork winner</strong><span>Scores a photographed drawing and compares it against alternatives.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_comparison_art_feedback.jpg" alt="Artwork diagnosis screen">
+          <div class="tour-caption"><strong>Explainable feedback</strong><span>Breaks down clarity, contrast, balance, and gives plain-language suggestions.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_comparison_portrait.jpg" alt="Portrait comparison result screen">
+          <div class="tour-caption"><strong>Portrait ranking</strong><span>Chooses the strongest image from similar selfies or profile candidates.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_photo_details.jpg" alt="Photo details analysis stats screen">
+          <div class="tour-caption"><strong>Quality inspection</strong><span>Sharpness, exposure, composition, smile, eye openness, and warnings in one view.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_linkedin_mockup.jpg" alt="LinkedIn profile mockup preview">
+          <div class="tour-caption"><strong>LinkedIn preview</strong><span>Shows whether a portrait feels professional in a profile layout.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_slack_mockup.jpg" alt="Slack and Teams mockup preview">
+          <div class="tour-caption"><strong>Work avatar fit</strong><span>Tests if the face remains clear in collaboration tools.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_whatsapp_mockup.jpg" alt="WhatsApp profile settings mockup">
+          <div class="tour-caption"><strong>Messaging profile</strong><span>Checks circular crops for personal messaging apps.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_wechat_mockup.jpg" alt="WeChat moments mockup">
+          <div class="tour-caption"><strong>Moments preview</strong><span>Shows a feed-style memory before posting.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_instagram_mockup.jpg" alt="Instagram post mockup">
+          <div class="tour-caption"><strong>Instagram post</strong><span>Visualizes how the photo lands in a polished feed card.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_facebook_mockup.jpg" alt="Facebook post mockup">
+          <div class="tour-caption"><strong>Facebook post</strong><span>Checks shareability for family and friend contexts.</span></div>
+        </article>
+        <article class="tour-card">
+          <img src="web_assets/app_tour_cover_mockup.jpg" alt="Facebook and LinkedIn cover mockup">
+          <div class="tour-caption"><strong>Cover safe zone</strong><span>Warns when faces or key content may be blocked by overlay elements.</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy Highlight Section -->
+  <section id="privacy" class="scroll-reveal">
+    <div class="glass-card privacy-badge-container">
+      <div class="privacy-icon">🔒</div>
+      <h3>Privacy First, By Design</h3>
+      <p>SnapScore is built for the sensitive reality of photos: faces, homes, artwork, personal documents, and memories. The product promise is simple: analyze locally, explain clearly, and keep the user in control.</p>
+    </div>
+  </section>
+
+  <!-- Technical Specs Stack List -->
+  <section id="tech-specs" class="scroll-reveal">
+    <div class="section-header">
+      <h2>Engineered for Performance</h2>
+      <p>Leveraging high-performance local compilation and native platform libraries to deliver fast analysis without cloud costs.</p>
+    </div>
+
+    <div class="tech-layout">
+      <div class="tech-list">
+        <div class="tech-item">
+          <div class="tech-num">1</div>
+          <div class="tech-text">
+            <h4>Flutter Framework</h4>
+            <p>Guarantees smooth 60fps scrolling and a beautifully unified UI layout across Android and iOS platforms.</p>
+          </div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-num">2</div>
+          <div class="tech-text">
+            <h4>On-Device OpenCV Pipeline</h4>
+            <p>Runs Laplacian edge-definition calculations, Canny contours, and value-shading matrices on raw byte buffers in milliseconds.</p>
+          </div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-num">3</div>
+          <div class="tech-text">
+            <h4>Google ML Kit Vision</h4>
+            <p>Extracts face coordinates, smile indicators, and facial rotation metrics locally with zero network queries.</p>
+          </div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-num">4</div>
+          <div class="tech-text">
+            <h4>Hive Database Storage</h4>
+            <p>Provides a lightning-fast key-value document store for historical analysis snapshots, loaded completely offline.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Display Feature Graphic -->
+      <div class="glass-card" style="padding:0; overflow:hidden;">
+        <img src="web_assets/feature_graphic.png" alt="Feature Graphic Architecture" style="width:100%; display:block;">
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Section -->
+  <footer>
+    <div class="footer-container">
+      <div class="footer-text">
+        &copy; 2026 SnapScore App. Built for total privacy and visual excellence.
+      </div>
+      <div class="footer-links">
+        <a href="https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678" target="_blank" style="color: var(--secondary);">Download App</a>
+        <a href="#features">Features</a>
+        <a href="#demo">Demo</a>
+        <a href="#privacy">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Page Interactivity Scripts -->
+  <script>
+    // 1. Preset Score Simulator Logic
+    const presets = {
+      sketch: {
+        badge: "Art Work (Sketch)",
+        score: "8.4",
+        offset: 75, // (10 - 8.4)/10 * 471.2 = 75.39
+        metrics: [
+          { name: "Line Clarity / Stroke", val: "8.8 / 10", width: "88%" },
+          { name: "Contrast / Shading Range", val: "8.0 / 10", width: "80%" },
+          { name: "Composition Balance", val: "8.5 / 10", width: "85%" }
+        ],
+        feedback: "Excellent stroke definition! Shading contrast is good. Center framing is well balanced. Lay the capture sheet completely flat next time to avoid slight perspective warping."
+      },
+      blurry: {
+        badge: "Standard Photo",
+        score: "4.2",
+        offset: 273, // (10 - 4.2)/10 * 471.2 = 273.2
+        metrics: [
+          { name: "Focus & Sharpness", val: "3.5 / 10", width: "35%" },
+          { name: "Lighting & Exposure", val: "4.8 / 10", width: "48%" },
+          { name: "Composition Framing", val: "4.2 / 10", width: "42%" }
+        ],
+        feedback: "Poor light detection and blur detected. Image contrast is flat. Suggest using a black-and-white filter (like Inkwell) to mask noise and shooting under a bright, diffused light source."
+      },
+      portrait: {
+        badge: "LinkedIn / Corporate Profile",
+        score: "9.2",
+        offset: 37, // (10 - 9.2)/10 * 471.2 = 37.6
+        metrics: [
+          { name: "Face Definition", val: "9.5 / 10", width: "95%" },
+          { name: "Expression / Smile Meter", val: "9.0 / 10", width: "90%" },
+          { name: "Profile Aspect Alignment", val: "9.2 / 10", width: "92%" }
+        ],
+        feedback: "Perfect centered portrait headshot! Expression appears very professional and approachable. Color saturation is balanced. Excellent fit for LinkedIn or corporate directory avatar."
+      }
+    };
+
+    function selectPreset(presetKey) {
+      // Toggle active card styling
+      const cards = document.querySelectorAll('.preset-card');
+      const indexMap = { sketch: 0, blurry: 1, portrait: 2 };
+      cards.forEach((card, idx) => {
+        if (idx === indexMap[presetKey]) card.classList.add('active');
+        else card.classList.remove('active');
+      });
+
+      const data = presets[presetKey];
+      
+      // Update badge and text
+      document.getElementById('sim-badge').innerText = data.badge;
+      document.getElementById('sim-score-text').innerText = data.score;
+      document.getElementById('sim-ai-feedback').innerText = data.feedback;
+      
+      // Animate progress circle
+      const progressCircle = document.getElementById('sim-progress-circle');
+      progressCircle.style.strokeDashoffset = data.offset;
+
+      // Update individual progress meters
+      document.getElementById('metric-1-name').innerText = data.metrics[0].name;
+      document.getElementById('metric-1-val').innerText = data.metrics[0].val;
+      document.getElementById('metric-1-bar').style.width = data.metrics[0].width;
+
+      document.getElementById('metric-2-name').innerText = data.metrics[1].name;
+      document.getElementById('metric-2-val').innerText = data.metrics[1].val;
+      document.getElementById('metric-2-bar').style.width = data.metrics[1].width;
+
+      document.getElementById('metric-3-name').innerText = data.metrics[2].name;
+      document.getElementById('metric-3-val').innerText = data.metrics[2].val;
+      document.getElementById('metric-3-bar').style.width = data.metrics[2].width;
+    }
+
+    // Initialize the simulator
+    setTimeout(() => {
+      selectPreset('sketch');
+    }, 300);
+
+    // 1.5 Hero Share Sheet Simulator Loop
+    const simulator = document.getElementById('phone-simulator');
+    let simulatorState = 'state-photos';
+
+    function cycleSimulatorState() {
+      if (!simulator) return;
+
+      if (simulatorState === 'state-photos') {
+        simulatorState = 'state-share';
+        simulator.className = 'hero-phone-mockup state-share';
+      } else if (simulatorState === 'state-share') {
+        simulatorState = 'state-results';
+        simulator.className = 'hero-phone-mockup state-results';
+      } else {
+        simulatorState = 'state-photos';
+        simulator.className = 'hero-phone-mockup state-photos';
+      }
+    }
+
+    // Cycle states every 4.5 seconds
+    setInterval(cycleSimulatorState, 4500);
+
+    // 2. Interactive Social Crop Mockups Logic
+    const mocks = ['linkedin', 'instagram', 'slack', 'cover'];
+    function selectSocial(platformKey) {
+      // Toggle card selector states
+      const items = document.querySelectorAll('.social-selector-item');
+      const indexMap = { linkedin: 0, instagram: 1, slack: 2, cover: 3 };
+      items.forEach((item, idx) => {
+        if (idx === indexMap[platformKey]) item.classList.add('active');
+        else item.classList.remove('active');
+      });
+
+      // Display correct mockup
+      mocks.forEach(m => {
+        const mockEl = document.getElementById('mock-' + m);
+        if (m === platformKey) {
+          mockEl.style.display = 'block';
+          mockEl.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            mockEl.style.transform = 'scale(1)';
+          }, 50);
+        } else {
+          mockEl.style.display = 'none';
+        }
+      });
+    }
+
+    // 3. Mobile Navigation Menu Toggle Logic
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const navLinks = document.getElementById('nav-links');
+
+    if (mobileToggle && navLinks) {
+      mobileToggle.addEventListener('click', () => {
+        mobileToggle.classList.toggle('active');
+        navLinks.classList.toggle('active');
+      });
+    }
+
+    function closeMobileMenu() {
+      if (mobileToggle && navLinks) {
+        mobileToggle.classList.remove('active');
+        navLinks.classList.remove('active');
+      }
+    }
+
+    // 4. Jump to sections instantly, without animated scrolling on image-heavy pages.
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (event) => {
+        const targetId = anchor.getAttribute('href');
+        if (!targetId || targetId === '#') return;
+
+        const targetEl = document.querySelector(targetId);
+        if (!targetEl) return;
+
+        event.preventDefault();
+        closeMobileMenu();
+
+        document.documentElement.classList.add('is-jumping');
+        const headerHeight = document.querySelector('header')?.offsetHeight || 0;
+        const targetTop = targetEl.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+
+        window.scrollTo(0, Math.max(0, targetTop));
+        history.pushState(null, '', targetId);
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove('is-jumping');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

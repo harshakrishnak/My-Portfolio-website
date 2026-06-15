@@ -424,6 +424,17 @@ export default function App() {
   // GitHub Personal Projects list
   const githubProjects: GithubProject[] = [
     {
+      name: 'snapscore',
+      description: 'Private on-device photo and artwork intelligence platform. Evaluates visual aesthetic quality, ranks duplicate frames, and diagnoses composition details locally on your Apple device.',
+      tech: ['Flutter', 'Dart', 'OpenCV', 'iOS Share Extension'],
+      stars: 0,
+      forks: 0,
+      url: 'https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678',
+      hasDemo: true,
+      demoType: 'external',
+      demoUrl: '/snapscore'
+    },
+    {
       name: 'Camera-DB-MCP',
       description: 'An MCP (Model Context Protocol) server that provides AI assistants with access to a comprehensive CCTV camera database. Includes 10,000 sample cameras with rich metadata, search capabilities, filtering by manufacturer/type/location, and statistical analysis tools.',
       tech: ['Node.js', 'JavaScript', 'MCP', 'JSON Schema'],
@@ -1629,16 +1640,30 @@ export default function App() {
 
                     {/* Pulse status badge */}
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wide border ${
-                      project.demoType === 'external'
+                      project.name === 'snapscore'
+                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                        : project.demoType === 'external'
                         ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
                         : project.demoType === 'scroll'
                         ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
                         : 'bg-green-500/10 border-green-500/20 text-green-400'
                     }`}>
                       <span className={`w-1 h-1 rounded-full mr-1.5 ${
-                        project.demoType === 'external' ? 'bg-blue-400' : project.demoType === 'scroll' ? 'bg-yellow-400 animate-pulse' : 'bg-green-500 animate-ping'
+                        project.name === 'snapscore'
+                          ? 'bg-green-400 animate-pulse'
+                          : project.demoType === 'external'
+                          ? 'bg-blue-400'
+                          : project.demoType === 'scroll'
+                          ? 'bg-yellow-400 animate-pulse'
+                          : 'bg-green-500 animate-ping'
                       }`} />
-                      {project.demoType === 'external' ? 'CODE ONLY' : project.demoType === 'scroll' ? 'DASHBOARD DEMO' : 'LIVE SIMULATOR'}
+                      {project.name === 'snapscore'
+                        ? 'LIVE DEMO'
+                        : project.demoType === 'external'
+                        ? 'CODE ONLY'
+                        : project.demoType === 'scroll'
+                        ? 'DASHBOARD DEMO'
+                        : 'LIVE SIMULATOR'}
                     </span>
                   </div>
 
@@ -1648,16 +1673,27 @@ export default function App() {
                   </p>
 
                   {/* Github statistics row */}
-                  <div className="flex items-center space-x-4 text-[10px] font-mono text-text-theme-muted">
-                    <span className="flex items-center">
-                      <svg className="w-3.5 h-3.5 mr-1 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                      {project.stars} Stars
-                    </span>
-                    <span className="flex items-center">
-                      <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M18 15V9a4 4 0 0 0-4-4h-4M6 9v9"/></svg>
-                      {project.forks} Forks
-                    </span>
-                  </div>
+                  {project.name === 'snapscore' ? (
+                    <div className="flex items-center space-x-4 text-[10px] font-mono text-text-theme-muted">
+                      <span className="flex items-center">
+                        ★ iOS App Store
+                      </span>
+                      <span className="flex items-center">
+                        ● Live Production
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-4 text-[10px] font-mono text-text-theme-muted">
+                      <span className="flex items-center">
+                        <svg className="w-3.5 h-3.5 mr-1 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        {project.stars} Stars
+                      </span>
+                      <span className="flex items-center">
+                        <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M18 15V9a4 4 0 0 0-4-4h-4M6 9v9"/></svg>
+                        {project.forks} Forks
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card footer / Actions */}
@@ -1673,15 +1709,27 @@ export default function App() {
 
                   {/* Action buttons */}
                   <div className="flex items-center space-x-2 shrink-0">
-                    <a
-                      href={project.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 border border-border-theme hover:border-border-theme-hover bg-bg-secondary/40 rounded-lg text-text-theme-secondary hover:text-text-theme-primary transition-all"
-                      title="View Repository"
-                    >
-                      <GitHubIcon className="w-3.5 h-3.5" />
-                    </a>
+                    {project.name === 'snapscore' ? (
+                      <a
+                        href={project.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 border border-border-theme hover:border-border-theme-hover bg-bg-secondary/40 rounded-lg text-text-theme-secondary hover:text-text-theme-primary transition-all"
+                        title="Download on App Store"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    ) : (
+                      <a
+                        href={project.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 border border-border-theme hover:border-border-theme-hover bg-bg-secondary/40 rounded-lg text-text-theme-secondary hover:text-text-theme-primary transition-all"
+                        title="View Repository"
+                      >
+                        <GitHubIcon className="w-3.5 h-3.5" />
+                      </a>
+                    )}
 
                     {project.hasDemo && (
                       <button
@@ -1694,7 +1742,7 @@ export default function App() {
                             const dash = document.getElementById('dashboard');
                             dash?.scrollIntoView({ behavior: 'smooth' });
                           } else {
-                            window.open(project.url, '_blank');
+                            window.open(project.demoUrl || project.url, '_blank');
                           }
                         }}
                         className="px-3 py-1.5 bg-accent-theme-primary/10 border border-accent-theme-primary/30 hover:bg-accent-theme-primary hover:text-bg-primary text-accent-theme-primary rounded-lg text-xs font-mono font-bold transition-all cursor-pointer text-glow"
