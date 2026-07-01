@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting to SnapScore on the App Store...</title>
-  <meta http-equiv="refresh" content="0; url=https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678">
+  <title>Redirecting to SnapScore...</title>
   <style>
     body {
       background-color: #030712;
@@ -17,6 +16,8 @@
       min-height: 100vh;
       margin: 0;
       text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
     }
     .spinner {
       width: 40px;
@@ -30,24 +31,86 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    a {
-      color: #06b6d4;
-      text-decoration: none;
-      font-weight: 500;
+    h1 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      font-weight: 600;
     }
-    a:hover {
-      text-decoration: underline;
+    .fallback-links {
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      width: 220px;
+      box-sizing: border-box;
+    }
+    .btn-apple {
+      background-color: #1f2937;
+      color: #f3f4f6;
+      border: 1px solid #374151;
+    }
+    .btn-apple:hover {
+      background-color: #374151;
+    }
+    .btn-google {
+      background-color: #0284c7;
+      color: #ffffff;
+      border: 1px solid #0369a1;
+    }
+    .btn-google:hover {
+      background-color: #0369a1;
     }
   </style>
   <script>
-    window.location.href = "https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678";
+    const iosUrl = "https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678";
+    const androidUrl = "https://play.google.com/store/apps/details?id=com.harshakrishnak.snapscore";
+
+    function performRedirect() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isAndroid = /android/i.test(userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+      let redirectUrl = iosUrl; // Default fallback to iOS App Store
+      let storeName = "App Store";
+
+      if (isAndroid) {
+        redirectUrl = androidUrl;
+        storeName = "Google Play Store";
+      }
+
+      document.getElementById("status-text").innerText = "Redirecting you to SnapScore on the " + storeName + "...";
+      
+      // Execute redirection
+      window.location.href = redirectUrl;
+    }
+
+    window.onload = performRedirect;
   </script>
 </head>
 <body>
   <div class="spinner"></div>
-  <p>Redirecting you to SnapScore on the App Store...</p>
-  <p style="font-size: 14px; color: #9ca3af;">
-    If you are not redirected automatically, <a href="https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678">click here</a>.
-  </p>
+  <h1 id="status-text">Detecting your device and redirecting...</h1>
+  
+  <div class="fallback-links">
+    <p style="font-size: 13px; color: #9ca3af; margin-bottom: 5px;">If you are not redirected automatically, select your platform below:</p>
+    <a href="https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678" class="btn btn-apple">
+       Download for iOS
+    </a>
+    <a href="https://play.google.com/store/apps/details?id=com.harshakrishnak.snapscore" class="btn btn-google">
+      ▶ Download for Android
+    </a>
+  </div>
 </body>
 </html>
