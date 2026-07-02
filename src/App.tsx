@@ -429,7 +429,7 @@ export default function App() {
       tech: ['Flutter', 'Dart', 'OpenCV', 'iOS Share Extension'],
       stars: 0,
       forks: 0,
-      url: 'https://apps.apple.com/in/app/snapscore-choose-best-pic-ai/id6777499678',
+      url: 'https://harshakrishnak.com/snapscore-download',
       hasDemo: true,
       demoType: 'external',
       demoUrl: '/snapscore'
